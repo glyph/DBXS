@@ -1,0 +1,21 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "dbxs"
+authors = [{name = "Glyph", email = "code@glyph.im"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["version", "description"]
+requires-python = ">=3.7"
+dependencies = [
+  "twisted",
+]
+
+[project.urls]
+Home = "https://github.com/glyph/DBXS"
+
+[tool.black]
+line-length = 79

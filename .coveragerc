@@ -1,0 +1,17 @@
+[run]
+branch = True
+parallel = True
+source = dbxs
+
+[paths]
+source=
+   src/dbxs
+   .tox/*/lib/python*/site-packages/dbxs
+   .tox/*/lib/pypy*/site-packages/dbxs
+   .tox/*/Lib/site-packages/dbxs
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    \s*\.\.\.$
