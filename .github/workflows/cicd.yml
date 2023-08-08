@@ -306,7 +306,7 @@ jobs:
   # Then required jobs can be updated directly form the code,
   # without having to go the GitHub repo setting -> Protected branch
   # and all the clicking.
-dbxs-required:
+  dbxs-required:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     if: always()
