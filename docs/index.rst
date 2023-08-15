@@ -3,13 +3,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root toctree directive.
 
-Welcome to DBXS's documentation!
+DataBase Acc(X)esS
 ================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
+    introduction
+    howto
 
 
 Indices and tables
