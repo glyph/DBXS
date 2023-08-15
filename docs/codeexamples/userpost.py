@@ -116,13 +116,16 @@ async def main() -> None:
         cur = await c.cursor()
         for expr in schema.split(";"):
             await cur.execute(expr)
+
     async with transaction(asyncDriver) as c:
         cur = await c.cursor()
         poster = posts(c)
         b = await poster.createUser("bob")
         await b.post("a post")
+        await b.post("another post")
+        post: Post
         async for post in b.posts():
-            print(post)
+            print(post.created, repr(post.content))
 
 
 if __name__ == "__main__":
@@ -131,7 +134,6 @@ if __name__ == "__main__":
         from twisted.internet import reactor
 
     def reportAndStop(f: Failure | None) -> None:
-        print("reporting and stopping", f)
         reactor.stop()
         if f is not None:
             print(f)
