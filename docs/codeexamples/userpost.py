@@ -3,9 +3,7 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
-from sqlite3 import register_adapter, register_converter
 from typing import TYPE_CHECKING, AsyncIterable, Protocol
-from uuid import UUID, uuid4
 
 from twisted.internet.defer import Deferred
 from twisted.internet.interfaces import IReactorCore
@@ -17,14 +15,14 @@ from dbxs.dbapi_async import adaptSynchronousDriver, transaction
 
 schema = """
 CREATE TABLE user (
-    name TEXT,
-    id UUID
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
 );
 CREATE TABLE post (
-    created TIMESTAMP,
-    content TEXT,
-    author UUID,
-    id UUID,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created TIMESTAMP NOT NULL,
+    content TEXT NOT NULL,
+    author INTEGER NOT NULL,
     FOREIGN KEY(author)
         REFERENCES user(id)
         ON DELETE CASCADE
@@ -32,15 +30,8 @@ CREATE TABLE post (
 """
 
 
-register_adapter(UUID, lambda u: u.bytes_le)
-register_converter("UUID", lambda b: UUID(bytes_le=b))
-
-
 def newConnection() -> sqlite3.dbapi2.Connection:
     result = sqlite3.connect("user-posts.sqlite")
-    result.create_function(
-        "uuid4", 0, lambda: str(uuid4()), deterministic=False
-    )
     return result
 
 
@@ -52,13 +43,11 @@ asyncDriver = adaptSynchronousDriver(
 @dataclass
 class User:
     postDB: PostDB
-    id: UUID
+    id: int
     name: str
 
     async def post(self, text: str) -> None:
-        return await self.postDB.makePostByUser(
-            datetime.now(), text, uuid4(), self.id
-        )
+        return await self.postDB.makePostByUser(datetime.now(), text, self.id)
 
     def posts(self) -> AsyncIterable[Post]:
         return self.postDB.postsForUser(self.id)
@@ -69,15 +58,15 @@ class Post:
     postDB: PostDB
     created: datetime
     content: str
-    id: UUID
+    id: int
     what: object
 
 
 class PostDB(Protocol):
     @query(
         sql="""
-        insert into user(id, name)
-        values(uuid4(), {name})
+        insert into user(name)
+        values({name})
         returning id, name
         """,
         load=one(User),
@@ -93,17 +82,17 @@ class PostDB(Protocol):
         """,
         load=many(Post),
     )
-    def postsForUser(self, userID: UUID) -> AsyncIterable[Post]:
+    def postsForUser(self, userID: int) -> AsyncIterable[Post]:
         ...
 
     @statement(
         sql="""
-        insert into post( created,   content,   id, author)
-        values          ({created}, {content}, {id}, {author})
+        insert into post( created,   content,   author)
+        values          ({created}, {content}, {author})
         """
     )
     async def makePostByUser(
-        self, created: datetime, content: str, id: UUID, author: UUID
+        self, created: datetime, content: str, author: int
     ) -> None:
         ...
 
