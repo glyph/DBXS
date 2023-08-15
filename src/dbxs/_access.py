@@ -314,7 +314,7 @@ def accessor(
     AsyncConnection to a set of declared SQL methods.
     """
     return type(
-        f"{accessPatternProtocol.__name__}DB",
+        f"_{accessPatternProtocol.__name__}_Accessor",
         tuple([AccessProxy]),
         {
             name: metadata.proxyMethod
