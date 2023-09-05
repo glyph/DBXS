@@ -50,7 +50,7 @@ _P = ParamSpec("_P")
 
 
 def eagerDeferredCoroutine(
-    f: Callable[_P, Coroutine[Deferred[object], object, _T]]
+    f: Callable[_P, Coroutine[Deferred[Any], object, _T]]
 ) -> Callable[_P, Deferred[_T]]:
     def inner(*args: _P.args, **kwargs: _P.kwargs) -> Deferred[_T]:
         return Deferred.fromCoroutine(f(*args, **kwargs))
