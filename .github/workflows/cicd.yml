@@ -290,6 +290,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           env_vars: GITHUB_REF,GITHUB_COMMIT,GITHUB_USER,GITHUB_WORKFLOW
           fail_ci_if_error: true
+          version: 0.7.1
         env:
           GITHUB_REF: ${{ github.ref }}
           GITHUB_COMMIT: ${{ github.sha }}
