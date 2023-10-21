@@ -9,8 +9,8 @@ DataBase Acc(X)esS
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
     introduction
-    howto
 
 
 Indices and tables
