@@ -40,11 +40,13 @@ asyncDriver = adaptSynchronousDriver(
 )
 
 
+# user attributes
 @dataclass
 class User:
     postDB: PostDB
     id: int
     name: str
+    # end user attributes
 
     async def post(self, text: str) -> None:
         return await self.postDB.makePostByUser(datetime.now(), text, self.id)

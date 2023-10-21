@@ -11,6 +11,7 @@ DataBase Acc(X)esS
    :caption: Contents:
 
    introduction
+   howto
 
 
 Indices and tables
