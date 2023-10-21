@@ -19,7 +19,7 @@ from ._access import (
 )
 
 
-__version__ = "0.0.3.dev"
+__version__ = "0.0.4"
 
 
 __all__ = [
