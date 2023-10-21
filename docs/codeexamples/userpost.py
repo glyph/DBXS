@@ -109,7 +109,6 @@ async def main() -> None:
             await cur.execute(expr)
 
     async with transaction(asyncDriver) as c:
-        cur = await c.cursor()
         poster = posts(c)
         b = await poster.createUser("bob")
         await b.post("a post")
