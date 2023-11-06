@@ -56,7 +56,9 @@ class MemoryPool:
         Add an additional callable to be called by L{MemoryPool.pump} and
         L{MemoryPool.flush}.  This can be used to interleave other sources of
         in-memory event completion to allow test coroutines to complete, such
-        as needing to call L{StubTreq.flush}.
+        as needing to call U{StubTreq.flush
+        <https://treq.readthedocs.io/en/latest/api.html#treq.testing.treq.testing.StubTreq.flush>}
+        in a web application.
         """
         self._performers.append(f)
 
