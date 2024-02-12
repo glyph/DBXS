@@ -41,7 +41,7 @@ class MemoryPool:
     """
     An in-memory connection pool to an in-memory SQLite database which can be
     controlled a single operation at a time.  Each operation that would
-    normally be asynchronoulsy dispatched to a thread can be invoked with the
+    normally be asynchronously dispatched to a thread can be invoked with the
     L{MemoryPool.pump} and L{MemoryPool.flush} methods.
 
     @ivar connectable: The L{AsyncConnectable} to be passed to the system under
