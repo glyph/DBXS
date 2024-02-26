@@ -127,24 +127,37 @@ class ThreadedCursorAdapter(AsyncCursor):
     _exclusive: ExclusiveWorkQueue
 
     async def description(self) -> Optional[Sequence[DBAPIColumnDescription]]:
-        return await self._exclusive.perform(lambda: self._cursor.description)
+        result: Optional[
+            Sequence[DBAPIColumnDescription]
+        ] = await self._exclusive.perform(lambda: self._cursor.description)
+        return result
 
     async def rowcount(self) -> int:
-        return await self._exclusive.perform(lambda: self._cursor.rowcount)
+        result: int = await self._exclusive.perform(
+            lambda: self._cursor.rowcount
+        )
+        return result
 
     async def fetchone(self) -> Optional[Sequence[Any]]:
-        return await self._exclusive.perform(self._cursor.fetchone)
+        result: Optional[Sequence[Any]] = await self._exclusive.perform(
+            self._cursor.fetchone
+        )
+        return result
 
     async def fetchmany(
         self, size: Optional[int] = None
     ) -> Sequence[Sequence[Any]]:
         a = [size] if size is not None else []
-        return await self._exclusive.perform(
+        result: Sequence[Sequence[Any]] = await self._exclusive.perform(
             lambda: self._cursor.fetchmany(*a)
         )
+        return result
 
     async def fetchall(self) -> Sequence[Sequence[Any]]:
-        return await self._exclusive.perform(self._cursor.fetchall)
+        result: Sequence[Sequence[Any]] = await self._exclusive.perform(
+            self._cursor.fetchall
+        )
+        return result
 
     async def execute(
         self,
@@ -367,7 +380,6 @@ def adaptSynchronousDriver(
     Adapt a synchronous DB-API driver to be an L{AsyncConnectable}.
     """
     if callFromThread is None:
-        reactor: Any
         from twisted.internet import reactor
 
         callFromThread = reactor.callFromThread
