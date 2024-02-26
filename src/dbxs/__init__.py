@@ -1,7 +1,5 @@
 """
-C{DBXS} (“database access”) is an asynchronous database access layer based on
-lightly organizing queries into simple data structures rather than a more
-general query builder or object-relational mapping.
+DBXS (“D.B. Access”) is an SQL database access layer for Python.
 """
 
 from ._access import (
