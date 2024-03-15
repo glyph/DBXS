@@ -11,14 +11,15 @@ from ._typing_compat import Protocol
 
 DBAPITypeCode = Optional[Any]
 
+
 DBAPIColumnDescription = Tuple[
-    str,
-    DBAPITypeCode,
-    Optional[int],
-    Optional[int],
-    Optional[int],
-    Optional[int],
-    Optional[bool],
+    str,  # name
+    DBAPITypeCode,  # type_code
+    Optional[int],  # display_size
+    Optional[int],  # internal_size
+    Optional[int],  # precision
+    Optional[int],  # scale
+    Optional[bool | int],  # null_ok
 ]
 
 
