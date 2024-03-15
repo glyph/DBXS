@@ -376,7 +376,7 @@ def adaptSynchronousDriver(
     if callFromThread is None:
         from twisted.internet import reactor
 
-        callFromThread = reactor.callFromThread
+        callFromThread = reactor.callFromThread  # type:ignore[attr-defined]
 
     if createWorker is None:
         createWorker = _newThread
