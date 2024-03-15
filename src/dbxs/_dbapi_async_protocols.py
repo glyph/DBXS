@@ -13,6 +13,13 @@ from ._dbapi_types import DBAPIColumnDescription
 from ._typing_compat import Protocol
 
 
+class InvalidConnection(Exception):
+    """
+    The connection has already been closed, or the transaction has already been
+    committed.
+    """
+
+
 ParamStyle = str
 
 # Sadly, db-api modules do not restrict themselves in this way, so we can't
@@ -28,7 +35,9 @@ class AsyncCursor(Protocol):
     Asynchronous Cursor Object.
     """
 
-    async def description(self) -> Optional[Sequence[DBAPIColumnDescription]]:
+    async def description(
+        self,
+    ) -> Optional[Sequence[DBAPIColumnDescription]]:
         ...
 
     async def rowcount(self) -> int:

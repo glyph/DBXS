@@ -6,9 +6,10 @@ from ._dbapi_async_protocols import (
     AsyncConnectable,
     AsyncConnection,
     AsyncCursor,
+    InvalidConnection,
     transaction,
 )
-from ._dbapi_async_twisted import InvalidConnection, adaptSynchronousDriver
+from ._dbapi_async_twisted import adaptSynchronousDriver
 
 
 __all__ = [

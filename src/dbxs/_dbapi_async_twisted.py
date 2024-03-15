@@ -31,6 +31,7 @@ from ._dbapi_async_protocols import (
     AsyncConnectable,
     AsyncConnection,
     AsyncCursor,
+    InvalidConnection,
     ParamStyle,
 )
 from ._dbapi_types import DBAPIColumnDescription, DBAPIConnection, DBAPICursor
@@ -39,13 +40,6 @@ from ._dbapi_types import DBAPIColumnDescription, DBAPIConnection, DBAPICursor
 _T = TypeVar("_T")
 
 F = Callable[[], None]
-
-
-class InvalidConnection(Exception):
-    """
-    The connection has already been closed, or the transaction has already been
-    committed.
-    """
 
 
 def _newThread() -> IExclusiveWorker:
