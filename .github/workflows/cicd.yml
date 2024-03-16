@@ -191,7 +191,8 @@ jobs:
 
     services:
       mysql:
-        image: mysql:8.0.29
+        image: "${{ matrix.mysql-image }}"
+        # mysql:8.0.29
         env:
           MYSQL_ROOT_PASSWORD: pass
           MYSQL_DATABASE: dev
@@ -205,7 +206,7 @@ jobs:
           --health-retries 10
 
       postgres16:
-        image: postgres:16
+        image: "${{ matrix.pg-image }}"
         env:
           POSTGRES_DB: test
           POSTGRES_PASSWORD: pass
@@ -226,6 +227,7 @@ jobs:
         tox-prefix: ["coverage"]
         tox-suffix: [""]
         optional: [false]
+        pg-image: [""]
         include:
           - os: "ubuntu-latest"
             python-version: "pypy-3.8"
@@ -244,6 +246,7 @@ jobs:
             twisted-version: "23.10"
             tox-prefix: "coverage"
             tox-suffix: "-postgres"
+            pg-image: "postgres:16"
             optional: false
 
     steps:
