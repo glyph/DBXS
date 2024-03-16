@@ -246,9 +246,9 @@ jobs:
             tox-suffix: "-postgres"
             optional: false
             env:
-              PGPORT=5432
-              PGDATABASE=test
-              PGPASSWORD=pass
+              PGPORT: "5432"
+              PGDATABASE: "test"
+              PGPASSWORD: "pass"
 
     steps:
 

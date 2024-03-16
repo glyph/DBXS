@@ -1,3 +1,5 @@
+from os import environ
+
 from twisted.trial.unittest import SynchronousTestCase as TestCase
 
 
@@ -13,7 +15,7 @@ else:
                 if cur.fetchall() == [tuple([True])]:
                     cantFindPG = ""
     except Exception as e:
-        cantFindPG = f"could not connect: {e}"
+        cantFindPG = f"could not connect: {e} ({environ.get('PGPORT')})"
 
 
 class AccessTestCase(TestCase):
