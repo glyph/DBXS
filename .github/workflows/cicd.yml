@@ -208,9 +208,10 @@ jobs:
       postgres16:
         image: "${{ matrix.pg-image }}"
         env:
-          POSTGRES_DB: test
-          POSTGRES_PASSWORD: pass
-          POSTGRES_PORT: 5432
+          POSTGRES_DB: "ghapgdb"
+          POSTGRES_USER: "ghapguser"
+          POSTGRES_PASSWORD: "ghapgpass"
+          POSTGRES_PORT: "5432"
         ports:
           - 5432:5432
         options: >-
@@ -300,10 +301,12 @@ jobs:
       - name: Run unit tests
         run: tox run -e ${TOX_ENV}
         env:
-          PGPORT: "5432"
           PGHOST: "localhost"
-          PGDATABASE: "test"
-          PGPASSWORD: "pass"
+          PGPORT: "5432"
+
+          PGUSER: "ghapguser"
+          PGDATABASE: "ghapgdb"
+          PGPASSWORD: "gpapgpass"
 
       - name: Combine coverage
         run: tox run -e coverage_combine,coverage_report
