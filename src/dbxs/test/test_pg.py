@@ -23,6 +23,10 @@ class AccessTestCase(TestCase):
         skip = cantFindPG
 
     def test_connect(self) -> None:
+        """
+        Testing self-test to ensure we can still connect to the database once
+        the tests are running.
+        """
         with connect() as con:
             with con.cursor() as cur:
                 cur.execute("select true")
