@@ -9,12 +9,12 @@ from psycopg import (
     paramstyle as psycopgParamStyle,
 )
 
-from ._dbapi_async_protocols import (
+from ..async_dbapi import (
     AsyncConnection as AsyncConnectionP,
     AsyncCursor as AsyncCursorP,
     ParamStyle,
 )
-from .dbapi_sync import DBAPIColumnDescription
+from ..dbapi import DBAPIColumnDescription
 
 
 @dataclass
@@ -24,13 +24,16 @@ class _PG2DBXSCursor:
     async def description(
         self,
     ) -> Optional[Sequence[DBAPIColumnDescription]]:
-        ...
+        subdesc = self._pgcur.description
+        if subdesc is None:
+            return None
+        return [tuple(each) for each in subdesc]
 
     async def rowcount(self) -> int:
         return self._pgcur.rowcount
 
     async def fetchone(self) -> Optional[Sequence[Any]]:
-        ...
+        return await self._pgcur.fetchone()
 
     async def fetchmany(
         self, size: Optional[int] = None

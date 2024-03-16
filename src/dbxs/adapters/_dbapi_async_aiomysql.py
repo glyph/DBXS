@@ -9,12 +9,12 @@ from mysql.connector.aio.abstracts import (
     MySQLCursorAbstract,
 )
 
-from ._dbapi_async_protocols import (
+from ..async_dbapi import (
     AsyncConnection as AsyncConnectionP,
     AsyncCursor as AsyncCursorP,
     ParamStyle,
 )
-from .dbapi_sync import DBAPIColumnDescription
+from ..dbapi import DBAPIColumnDescription
 
 
 @dataclass
