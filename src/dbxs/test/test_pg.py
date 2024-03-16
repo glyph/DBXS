@@ -1,24 +1,24 @@
 from twisted.trial.unittest import SynchronousTestCase as TestCase
 
 
-postgresAvailable = False
 try:
     from psycopg import connect
 except ImportError:
-    pass
+    cantFindPG = "psycopg not installed"
 else:
     try:
         with connect() as con:
             with con.cursor() as cur:
                 cur.execute("select true")
                 if cur.fetchall() == [tuple([True])]:
-                    postgresAvailable = True
-    except Exception:
-        pass
+                    cantFindPG = ""
+    except Exception as e:
+        cantFindPG = f"could not connect: {e}"
 
 
 class AccessTestCase(TestCase):
-    skip = "postgres not available" if not postgresAvailable else None
+    if cantFindPG:
+        skip = cantFindPG
 
     def test_connect(self) -> None:
         with connect() as con:

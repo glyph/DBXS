@@ -238,12 +238,17 @@ jobs:
             twisted-version: "current"
             tox-prefix: "coverage"
             optional: false
-          - os: "ubuntu-latest"
+          - name: "Postgres"
+            os: "ubuntu-latest"
             python-version: "3.12"
             twisted-version: "23.10"
             tox-prefix: "coverage"
             tox-suffix: "-postgres"
             optional: false
+            env:
+              PGPORT=5432
+              PGDATABASE=test
+              PGPASSWORD=pass
 
     steps:
 
