@@ -4,15 +4,18 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, List, TypeVar
+from unittest import TestCase
 from uuid import uuid4
 
 from twisted._threads._ithreads import IExclusiveWorker
 from twisted._threads._memory import createMemoryWorker
 from twisted.internet.defer import Deferred
-from twisted.trial.unittest import SynchronousTestCase
+from twisted.python.failure import Failure
 
-from ._dbapi_types import DBAPIConnection
-from .dbapi_async import AsyncConnectable, adaptSynchronousDriver
+from ._typing_compat import Protocol
+from .adapters.dbapi_twisted import adaptSynchronousDriver
+from .async_dbapi import AsyncConnectable
+from .dbapi import DBAPIConnection
 
 
 def sqlite3Connector() -> Callable[[], DBAPIConnection]:
@@ -111,7 +114,7 @@ class MemoryPool:
         )
 
 
-AnyTestCase = TypeVar("AnyTestCase", bound=SynchronousTestCase)
+AnyTestCase = TypeVar("AnyTestCase", bound=TestCase)
 syncAsyncTest = Callable[
     [AnyTestCase, MemoryPool],
     Coroutine[Any, Any, None],
@@ -119,9 +122,66 @@ syncAsyncTest = Callable[
 regularTest = Callable[[AnyTestCase], None]
 
 
-def immediateTest() -> (
-    Callable[[syncAsyncTest[AnyTestCase]], regularTest[AnyTestCase]]
-):
+class CompletionTester(Protocol):
+    def assertNoResult(self) -> None:
+        """
+        Raise an exception if a result is present.
+        """
+
+    def assertSuccessResult(self) -> None:
+        """
+        Raise an exception if a result is present.
+        """
+
+
+class ImmediateDriver(Protocol):
+    def schedule(
+        self,
+        failer: Callable[[str], None],
+        coroutine: Coroutine[Any, Any, Any],
+    ) -> CompletionTester:
+        ...
+
+
+@dataclass
+class DeferredCompletionTester:
+    failer: Callable[[str], None]
+    deferred: Deferred[object]
+
+    def assertNoResult(self) -> None:
+        succeeded: list[object] = []
+        failed: list[Failure] = []
+        self.deferred.addCallbacks(succeeded.append, failed.append)
+        if failed:
+            failed[0].raiseException()
+        if succeeded:
+            self.failer(f"unexpected result {succeeded[0]}")
+
+    def assertSuccessResult(self) -> None:
+        succeeded: list[object] = []
+        failed: list[Failure] = []
+        self.deferred.addCallbacks(succeeded.append, failed.append)
+        if failed:
+            failed[0].raiseException()
+        if not succeeded:
+            self.failer("no result")
+
+
+class ImmediateDeferred:
+    @staticmethod
+    def schedule(
+        failer: Callable[[str], None],
+        coroutine: Coroutine[Any, Any, Any],
+    ) -> CompletionTester:
+        return DeferredCompletionTester(
+            failer,
+            Deferred.fromCoroutine(coroutine),
+        )
+
+
+def immediateTest(
+    driver: ImmediateDriver = ImmediateDeferred,
+) -> Callable[[syncAsyncTest[AnyTestCase]], regularTest[AnyTestCase]]:
     """
     Decorate an C{async def} test that expects a coroutine.
     """
@@ -129,11 +189,11 @@ def immediateTest() -> (
     def decorator(decorated: syncAsyncTest[AnyTestCase]) -> regularTest:
         def regular(self: AnyTestCase) -> None:
             pool = MemoryPool.new()
-            d = Deferred.fromCoroutine(decorated(self, pool))
-            self.assertNoResult(d)
+            d = driver.schedule(self.fail, decorated(self, pool))
+            d.assertNoResult()
             while pool.flush():
                 pass
-            self.successResultOf(d)
+            d.assertSuccessResult()
 
         return regular
 

@@ -1,3 +1,9 @@
+"""
+This is a collection of abstract types that are I{like} the PEP 249 types in
+L{dbxs.dbapi}, but with C{await} put in the relevant places to make them
+asynchronous.
+"""
+
 from contextlib import asynccontextmanager
 from typing import (
     Any,
@@ -9,8 +15,8 @@ from typing import (
     Union,
 )
 
-from ._dbapi_types import DBAPIColumnDescription
 from ._typing_compat import Protocol
+from .dbapi import DBAPIColumnDescription
 
 
 class InvalidConnection(Exception):

@@ -20,7 +20,7 @@ from typing import (
 )
 
 from ._typing_compat import ParamSpec, Protocol
-from .dbapi_async import AsyncConnection, AsyncCursor
+from .async_dbapi import AsyncConnection, AsyncCursor
 
 
 T = TypeVar("T")

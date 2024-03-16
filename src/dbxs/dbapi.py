@@ -1,12 +1,13 @@
+"""
+This module is a description of the abstract types described by U{PEP 249
+Database API 2.0 <https://www.python.org/dev/peps/pep-0249/>}.
+"""
+
 from __future__ import annotations
 
 from typing import Any, Mapping, Optional, Sequence, Tuple, Union
 
 from ._typing_compat import Protocol
-
-
-# PEP 249 Database API 2.0 Types
-# https://www.python.org/dev/peps/pep-0249/
 
 
 DBAPITypeCode = Optional[Any]

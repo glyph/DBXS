@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Optional
-
-from twisted.trial.unittest import SynchronousTestCase as TestCase
+from unittest import TestCase
 
 from .. import (
     ExtraneousMethods,
@@ -17,7 +16,7 @@ from .. import (
     statement,
 )
 from .._typing_compat import Protocol
-from ..dbapi_async import AsyncConnection, transaction
+from ..async_dbapi import AsyncConnection, transaction
 from ..testing import MemoryPool, immediateTest
 
 

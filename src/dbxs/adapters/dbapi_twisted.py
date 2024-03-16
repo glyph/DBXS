@@ -1,8 +1,12 @@
 # -*- test-case-name: dbxs.test.test_sync_adapter -*-
 """
-Async version of db-api methods which associate each underlying db-api
-connection with a specific thread, since some database drivers have issues with
-sharing connections and cursors between threads.
+This adapter can convert any DB-API 2.0 driver to an L{AsyncConnectable}
+asynchronous driver, using Twisted's threading infrastructure and returning
+Deferreds.
+
+While this adapter does require Twisted be installed, it does I{not}
+technically require the Twisted mainloop to be running, if you supply your own
+analog to L{twisted.internet.interfaces.IReactorThreads.callFromThread}.
 """
 
 from __future__ import annotations
@@ -27,14 +31,14 @@ from twisted._threads._ithreads import IExclusiveWorker
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 
-from ._dbapi_async_protocols import (
+from ..async_dbapi import (
     AsyncConnectable,
     AsyncConnection,
     AsyncCursor,
     InvalidConnection,
     ParamStyle,
 )
-from ._dbapi_types import DBAPIColumnDescription, DBAPIConnection, DBAPICursor
+from ..dbapi import DBAPIColumnDescription, DBAPIConnection, DBAPICursor
 
 
 _T = TypeVar("_T")
@@ -372,6 +376,10 @@ def adaptSynchronousDriver(
 ) -> AsyncConnectable:
     """
     Adapt a synchronous DB-API driver to be an L{AsyncConnectable}.
+
+    @note: If you do not pass your own C{callFromThread} parameter, this
+        requires the Twisted reactor to be running in order to process
+        responses.
     """
     if callFromThread is None:
         from twisted.internet import reactor

@@ -29,18 +29,17 @@ from zope.interface import implementer
 from twisted._threads import AlreadyQuit
 from twisted._threads._ithreads import IExclusiveWorker
 from twisted.internet.defer import Deferred
-from twisted.trial.unittest import TestCase
+from twisted.trial.unittest import SynchronousTestCase as TestCase
 
-from .._dbapi_async_twisted import ExclusiveWorkQueue, ThreadedConnectionPool
 from .._testing import sqlite3Connector
 from .._typing_compat import ParamSpec
-from ..dbapi_async import (
-    AsyncConnectable,
-    InvalidConnection,
+from ..adapters.dbapi_twisted import (
+    ExclusiveWorkQueue,
+    ThreadedConnectionPool,
     adaptSynchronousDriver,
-    transaction,
 )
-from ..dbapi_sync import DBAPIColumnDescription, DBAPIConnection, DBAPICursor
+from ..async_dbapi import AsyncConnectable, InvalidConnection, transaction
+from ..dbapi import DBAPIColumnDescription, DBAPIConnection, DBAPICursor
 
 
 pretendThreadID = 0
