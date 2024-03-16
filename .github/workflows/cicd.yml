@@ -183,7 +183,7 @@ jobs:
 
 
   unit:
-    name: "Py:${{ matrix.python-version }} - Tw:${{ matrix.twisted-version }} - ${{ matrix.os }}"
+    name: "${{ matrix.tox-suffix }}Py:${{ matrix.python-version }} - Tw:${{ matrix.twisted-version }} - ${{ matrix.os }}"
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -209,6 +209,7 @@ jobs:
         env:
           POSTGRES_DB: test
           POSTGRES_PASSWORD: pass
+          POSTGRES_PORT: 5432
         ports:
           - 5432:5432
         options: >-
@@ -238,17 +239,12 @@ jobs:
             twisted-version: "current"
             tox-prefix: "coverage"
             optional: false
-          - name: "Postgres"
-            os: "ubuntu-latest"
+          - os: "ubuntu-latest"
             python-version: "3.12"
             twisted-version: "23.10"
             tox-prefix: "coverage"
             tox-suffix: "-postgres"
             optional: false
-            env:
-              PGPORT: "5432"
-              PGDATABASE: "test"
-              PGPASSWORD: "pass"
 
     steps:
 
@@ -300,6 +296,10 @@ jobs:
 
       - name: Run unit tests
         run: tox run -e ${TOX_ENV}
+        env:
+          PGPORT: "5432"
+          PGDATABASE: "test"
+          PGPASSWORD: "pass"
 
       - name: Combine coverage
         run: tox run -e coverage_combine,coverage_report
