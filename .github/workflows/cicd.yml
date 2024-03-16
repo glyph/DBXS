@@ -306,7 +306,7 @@ jobs:
 
           PGUSER: "ghapguser"
           PGDATABASE: "ghapgdb"
-          PGPASSWORD: "gpapgpass"
+          PGPASSWORD: "ghapgpass"
 
       - name: Combine coverage
         run: tox run -e coverage_combine,coverage_report
