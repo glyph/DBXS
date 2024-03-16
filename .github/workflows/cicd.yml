@@ -206,7 +206,10 @@ jobs:
           --health-retries 10
 
       postgres16:
+
+        # https://github.com/actions/runner/issues/822
         image: "${{ matrix.pg-image }}"
+
         env:
           POSTGRES_DB: "ghapgdb"
           POSTGRES_USER: "ghapguser"
