@@ -283,6 +283,21 @@ class QmarkParamstyleMap:
         return [bound.arguments[each] for each in self.names]
 
 
+@dataclass
+class PyformatParamstyleMap:
+    names: List[str] = field(default_factory=list)
+
+    def __getitem__(self, name: str) -> str:
+        self.names.append(name)
+        return "%s"
+
+    def queryArguments(self, bound: BoundArguments) -> Sequence[object]:
+        """
+        Compute the arguments to the query.
+        """
+        return [bound.arguments[each] for each in self.names]
+
+
 class _EmptyProtocol(Protocol):
     """
     Empty protocol for setting a baseline of what attributes to ignore while
@@ -294,6 +309,7 @@ PROTOCOL_IGNORED_ATTRIBUTES = set(_EmptyProtocol.__dict__.keys())
 
 styles = {
     "qmark": QmarkParamstyleMap,
+    "pyformat": PyformatParamstyleMap,
 }
 
 
