@@ -223,6 +223,7 @@ jobs:
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         twisted-version: ["21.2", "22.1", "23.10"]
         tox-prefix: ["coverage"]
+        tox-suffix: [""]
         optional: [false]
         include:
           - os: "ubuntu-latest"
@@ -236,6 +237,12 @@ jobs:
             python-version: "pypy-3.9"
             twisted-version: "current"
             tox-prefix: "coverage"
+            optional: false
+          - os: "ubuntu-latest"
+            python-version: "3.12"
+            twisted-version: "23.10"
+            tox-prefix: "coverage"
+            tox-suffix: "-postgres"
             optional: false
 
     steps:
@@ -268,7 +275,7 @@ jobs:
           tw = "${{ matrix.twisted-version }}"
           tw = tw.replace(".", "")
 
-          env = f"${{ matrix.tox-prefix }}-py{py}-tw{tw}"
+          env = f"${{ matrix.tox-prefix }}-py{py}-tw{tw}${{ matrix.tox-suffix }}"
 
           print(f"TOX_ENV={env}")
 
