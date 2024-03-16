@@ -158,7 +158,7 @@ class QueryMetadata:
         raising L{ParamMismatch} if the expected parameters do not match.
         """
         sig = signature(protocolMethod)
-        precomputedSQL: Dict[str, Tuple[str, QmarkParamstyleMap]] = {}
+        precomputedSQL: Dict[str, Tuple[str, NameMapMapping]] = {}
         for style, mapFactory in styles.items():
             mapInstance = mapFactory()
             styledSQL = self.sql.format_map(mapInstance)
@@ -307,7 +307,18 @@ class _EmptyProtocol(Protocol):
 
 PROTOCOL_IGNORED_ATTRIBUTES = set(_EmptyProtocol.__dict__.keys())
 
-styles = {
+
+class NameMapMapping(Protocol):
+    names: List[str]
+
+    def __getitem__(self, __key: str) -> Any:
+        ...
+
+    def queryArguments(self, bound: BoundArguments) -> Sequence[object]:
+        ...
+
+
+styles: dict[str, Callable[[], NameMapMapping]] = {
     "qmark": QmarkParamstyleMap,
     "pyformat": PyformatParamstyleMap,
 }
