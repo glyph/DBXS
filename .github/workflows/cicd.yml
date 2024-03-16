@@ -301,6 +301,7 @@ jobs:
         run: tox run -e ${TOX_ENV}
         env:
           PGPORT: "5432"
+          PGHOST: "localhost"
           PGDATABASE: "test"
           PGPASSWORD: "pass"
 
