@@ -19,7 +19,7 @@ DBAPIColumnDescription = Tuple[
     Optional[int],  # internal_size
     Optional[int],  # precision
     Optional[int],  # scale
-    Optional[bool | int],  # null_ok
+    Union[None, bool, int],  # null_ok
 ]
 
 
