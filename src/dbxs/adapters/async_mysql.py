@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Union
+from typing import Any, Mapping, Optional, Sequence, Union
 
 from mysql.connector import paramstyle as mysqlParamStyle
 from mysql.connector.aio.abstracts import (
@@ -9,11 +9,7 @@ from mysql.connector.aio.abstracts import (
     MySQLCursorAbstract,
 )
 
-from ..async_dbapi import (
-    AsyncConnection as AsyncConnectionP,
-    AsyncCursor as AsyncCursorP,
-    ParamStyle,
-)
+from ..async_dbapi import AsyncConnection, AsyncCursor, ParamStyle
 from ..dbapi import DBAPIColumnDescription
 
 
@@ -76,7 +72,7 @@ class _MYSQL2DBXSAdapter:
     def paramstyle(self) -> ParamStyle:
         return mysqlParamStyle
 
-    async def cursor(self) -> AsyncCursorP:
+    async def cursor(self) -> AsyncCursor:
         return _MYSQL2DBXSCursor(await self._mysqlcon.cursor())
 
     async def rollback(self) -> None:
@@ -89,5 +85,15 @@ class _MYSQL2DBXSAdapter:
         await self._mysqlcon.close()
 
 
-if TYPE_CHECKING:
-    _Matchup: type[AsyncConnectionP] = _MYSQL2DBXSAdapter
+def adaptMySQL(connection: MySQLConnectionAbstract) -> AsyncConnection:
+    """
+    Adapt a connection created by U{mysql.connector.aio.connect
+    <https://dev.mysql.com/doc/connector-python/en/connector-python-asyncio.html>}
+    to an L{AsyncConnection}.
+    """
+    return _MYSQL2DBXSAdapter(connection)
+
+
+__all__ = [
+    "adaptMySQL",
+]
