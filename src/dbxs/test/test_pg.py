@@ -19,7 +19,7 @@ except ImportError:
 else:
     from psycopg import AsyncConnection
 
-    from ..adapters._dbapi_async_psycopg3 import _PG2DBXSAdapter
+    from ..adapters.async_psycopg import adaptPostgreSQL
 
     try:
         with connect() as con:
@@ -82,7 +82,7 @@ class AccessTestCase(TestCase):
             self.assertIn(
                 "PostgreSQL",
                 await pgia(
-                    _PG2DBXSAdapter(await AsyncConnection.connect())
+                    adaptPostgreSQL(await AsyncConnection.connect())
                 ).getPostgresVersion(),
             )
 
@@ -92,7 +92,7 @@ class AccessTestCase(TestCase):
         async def _() -> None:
             everything = []
             async for row in pgia(
-                _PG2DBXSAdapter(await AsyncConnection.connect())
+                adaptPostgreSQL(await AsyncConnection.connect())
             ).cannedValues("hello", 1, "second", 2):
                 everything.append((row.name, row.value))
             self.assertEqual([("hello", 1), ("second", 2)], everything)

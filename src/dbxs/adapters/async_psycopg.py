@@ -1,25 +1,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Union
+from typing import Any, Mapping, Optional, Sequence, Union
 
 from psycopg import (
-    AsyncConnection,
-    AsyncCursor,
+    AsyncConnection as PGAsyncConnection,
+    AsyncCursor as PGAsyncCursor,
     paramstyle as psycopgParamStyle,
 )
 
-from ..async_dbapi import (
-    AsyncConnection as AsyncConnectionP,
-    AsyncCursor as AsyncCursorP,
-    ParamStyle,
-)
+from ..async_dbapi import AsyncConnection, AsyncCursor, ParamStyle
 from ..dbapi import DBAPIColumnDescription
 
 
 @dataclass
 class _PG2DBXSCursor:
-    _pgcur: AsyncCursor
+    _pgcur: PGAsyncCursor
 
     async def description(
         self,
@@ -65,13 +61,13 @@ class _PG2DBXSCursor:
 
 @dataclass
 class _PG2DBXSAdapter:
-    _pgcon: AsyncConnection
+    _pgcon: PGAsyncConnection
 
     @property
     def paramstyle(self) -> ParamStyle:
         return psycopgParamStyle
 
-    async def cursor(self) -> AsyncCursorP:
+    async def cursor(self) -> AsyncCursor:
         return _PG2DBXSCursor(self._pgcon.cursor())
 
     async def rollback(self) -> None:
@@ -84,5 +80,15 @@ class _PG2DBXSAdapter:
         await self._pgcon.close()
 
 
-if TYPE_CHECKING:
-    _Matchup: type[AsyncConnectionP] = _PG2DBXSAdapter
+def adaptPostgreSQL(connection: PGAsyncConnection) -> AsyncConnection:
+    """
+    Adapt a connection created by U{psycopg.AsyncConnection.connect
+    <https://www.psycopg.org/psycopg3/docs/api/connections.html#psycopg.AsyncConnection.connect>}
+    to an L{AsyncConnection}.
+    """
+    return _PG2DBXSAdapter(connection)
+
+
+__all__ = [
+    "adaptPostgreSQL",
+]
