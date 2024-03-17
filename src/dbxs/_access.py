@@ -68,7 +68,7 @@ def one(
     Fetch a single result with a translator function.
     """
 
-    async def translate(db: object, cursor: AsyncCursor) -> T:
+    async def translateOne(db: object, cursor: AsyncCursor) -> T:
         rows = await cursor.fetchall()
         if len(rows) < 1:
             raise NotEnoughResults()
@@ -76,7 +76,7 @@ def one(
             raise TooManyResults()
         return load(db, *rows[0])
 
-    return translate
+    return translateOne
 
 
 def maybe(
@@ -87,7 +87,7 @@ def maybe(
     if it's not found.
     """
 
-    async def translate(db: object, cursor: AsyncCursor) -> Optional[T]:
+    async def translateMaybe(db: object, cursor: AsyncCursor) -> Optional[T]:
         rows = await cursor.fetchall()
         if len(rows) < 1:
             return None
@@ -95,7 +95,7 @@ def maybe(
             raise TooManyResults()
         return load(db, *rows[0])
 
-    return translate
+    return translateMaybe
 
 
 def many(
@@ -105,14 +105,16 @@ def many(
     Fetch multiple results with a function to translate rows.
     """
 
-    async def translate(db: object, cursor: AsyncCursor) -> AsyncIterable[T]:
+    async def translateMany(
+        db: object, cursor: AsyncCursor
+    ) -> AsyncIterable[T]:
         while True:
             row = await cursor.fetchone()
             if row is None:
                 return
             yield load(db, *row)
 
-    return translate
+    return translateMany
 
 
 async def zero(loader: object, cursor: AsyncCursor) -> None:
