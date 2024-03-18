@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from inspect import BoundArguments, signature
+from inspect import BoundArguments, isawaitable, signature
 from typing import (
     Any,
     AsyncIterable,
@@ -133,14 +133,18 @@ METADATA_KEY = "__query_metadata__"
 @dataclass
 class MaybeAIterable:
     down: Any
+    cursor: AsyncCursor = field(init=False)
 
     def __await__(self) -> Any:
         return self.down.__await__()
 
     async def __aiter__(self) -> Any:
-        actuallyiter = await self
-        async for each in actuallyiter:
-            yield each
+        try:
+            actuallyiter = await self
+            async for each in actuallyiter:
+                yield each
+        finally:
+            await self.cursor.close()
 
 
 @dataclass
@@ -181,7 +185,14 @@ class QueryMetadata:
             """
             Implementation of all database-proxy methods on objects returned
             from C{accessor}.
+
+            @note: This should really be two separate methods.  From
+                annotations we should know whether to use the aiterable path or
+                the awaitable path, we should not need to do the runtime check
+                every time.
             """
+
+            maybeai: MaybeAIterable
 
             async def body() -> Any:
                 conn = proxySelf.__query_connection__
@@ -190,13 +201,21 @@ class QueryMetadata:
                 bound = sig.bind(None, *args, **kw)
                 await cur.execute(styledSQL, styledMap.queryArguments(bound))
                 maybeAgen: Any = self.load(proxySelf, cur)
-                try:
-                    # there is probably a nicer way to detect aiter-ability
-                    return await maybeAgen
-                except TypeError:
+                if isawaitable(maybeAgen):
+                    # if it's awaitable, then it's not an aiterable.
+                    result = await maybeAgen
+                    await cur.close()
+                    return result
+                else:
+                    # if it's aiterable, we should be iterating it, not
+                    # awaiting it.  MaybeAIterable takes care of the implicit
+                    # await of _this_ coroutine.
+                    nonlocal maybeai
+                    maybeai.cursor = cur
                     return maybeAgen
 
-            return MaybeAIterable(body())
+            maybeai = MaybeAIterable(body())
+            return maybeai
 
         self.proxyMethod = proxyMethod
         setattr(protocolMethod, METADATA_KEY, self)

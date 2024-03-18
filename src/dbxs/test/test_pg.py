@@ -91,9 +91,10 @@ class AccessTestCase(TestCase):
     def test_valueConversions(self) -> None:
         async def _() -> None:
             everything = []
-            async for row in pgia(
-                adaptPostgreSQL(await AsyncConnection.connect())
-            ).cannedValues("hello", 1, "second", 2):
+            adapted = adaptPostgreSQL(await AsyncConnection.connect())
+            access = pgia(adapted)
+            values = access.cannedValues("hello", 1, "second", 2)
+            async for row in values:
                 everything.append((row.name, row.value))
             self.assertEqual([("hello", 1), ("second", 2)], everything)
 
