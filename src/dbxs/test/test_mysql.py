@@ -15,7 +15,7 @@ from .._typing_compat import Protocol
 try:
     from mysql.connector import connect
 except ImportError:
-    cantFindPG = "mysql-connector-python not installed"
+    cantFindMySQL = "mysql-connector-python not installed"
 else:
     from mysql.connector.aio import connect as connectAsync
     from mysql.connector.aio.abstracts import MySQLConnectionAbstract
@@ -29,9 +29,9 @@ else:
             with con.cursor() as cur:
                 cur.execute("select true")
                 if cur.fetchall() == [tuple([True])]:
-                    cantFindPG = ""
+                    cantFindMySQL = ""
     except Exception as e:
-        cantFindPG = f"could not connect: {e} ({environ.get('PGPORT')})"
+        cantFindMySQL = f"could not connect: {e} ({environ.get('MYSQL_USER')})"
 
 
 async def configuredConnectAsync() -> MySQLConnectionAbstract:
@@ -82,8 +82,8 @@ pgia = accessor(MySQLInternalsAccess)
 
 
 class AccessTestCase(TestCase):
-    if cantFindPG:
-        skip = cantFindPG
+    if cantFindMySQL:
+        skip = cantFindMySQL
 
     def test_basicAsyncConnection(self) -> None:
         async def _() -> None:
