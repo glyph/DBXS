@@ -271,27 +271,13 @@ class DBProxy:
 
 
 @dataclass
-class QmarkParamstyleMap:
+class IndexCountingParamstyleMap:
+    placeholder: str
     names: List[str] = field(default_factory=list)
 
     def __getitem__(self, name: str) -> str:
         self.names.append(name)
-        return "?"
-
-    def queryArguments(self, bound: BoundArguments) -> Sequence[object]:
-        """
-        Compute the arguments to the query.
-        """
-        return [bound.arguments[each] for each in self.names]
-
-
-@dataclass
-class PyformatParamstyleMap:
-    names: List[str] = field(default_factory=list)
-
-    def __getitem__(self, name: str) -> str:
-        self.names.append(name)
-        return "%s"
+        return self.placeholder
 
     def queryArguments(self, bound: BoundArguments) -> Sequence[object]:
         """
@@ -321,8 +307,8 @@ class NameMapMapping(Protocol):
 
 
 styles: dict[str, Callable[[], NameMapMapping]] = {
-    "qmark": QmarkParamstyleMap,
-    "pyformat": PyformatParamstyleMap,
+    "qmark": lambda: IndexCountingParamstyleMap("?"),
+    "pyformat": lambda: IndexCountingParamstyleMap("%s"),
 }
 
 
