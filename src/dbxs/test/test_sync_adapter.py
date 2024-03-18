@@ -29,7 +29,10 @@ from zope.interface import implementer
 from twisted._threads import AlreadyQuit
 from twisted._threads._ithreads import IExclusiveWorker
 from twisted.internet.defer import Deferred
-from twisted.trial.unittest import SynchronousTestCase as TestCase
+from twisted.trial.unittest import (
+    SynchronousTestCase as SyncTestCase,
+    TestCase as AsyncTestCase,
+)
 
 from .._testing import sqlite3Connector
 from .._typing_compat import ParamSpec
@@ -194,7 +197,7 @@ if TYPE_CHECKING:
     _2: Type[DBAPIConnection] = FakeDBAPIConnection
 
 
-def realThreadedAdapter(testCase: TestCase) -> AsyncConnectable:
+def realThreadedAdapter(testCase: AsyncTestCase) -> AsyncConnectable:
     """
     Create an AsyncConnectable using real threads and scheduling its
     non-threaded callbacks on the Twisted reactor, suitable for using in a
@@ -262,7 +265,7 @@ class SampleError(Exception):
     """
 
 
-class ResourceManagementTests(TestCase):
+class ResourceManagementTests(SyncTestCase):
     """
     Tests to make sure that various thread resources are managed correctly.
     """
@@ -550,7 +553,7 @@ class ResourceManagementTests(TestCase):
         self.assertEqual(self.threads[1].quitted, True)
 
 
-class InternalSafetyTests(TestCase):
+class InternalSafetyTests(SyncTestCase):
     """
     Tests for internal safety mechanisms; states which I{should} be unreachable
     via the public API but should nonetheless be reported.
@@ -571,7 +574,7 @@ class InternalSafetyTests(TestCase):
         self.assertEqual(stuff, [])
 
 
-class SyncAdapterTests(TestCase):
+class SyncAdapterTests(AsyncTestCase):
     """
     Integration tests for L{adaptSynchronousDriver}.
     """
