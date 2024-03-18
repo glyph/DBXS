@@ -30,7 +30,7 @@ else:
                 cur.execute("select true")
                 if cur.fetchall() == [tuple([True])]:
                     cantFindMySQL = ""
-    except Exception as e:
+    except Exception as e:  # pragma: nocov
         cantFindMySQL = f"could not connect: {e} ({environ.get('MYSQL_USER')})"
 
 
