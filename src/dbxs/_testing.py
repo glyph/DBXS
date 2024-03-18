@@ -146,24 +146,19 @@ class ImmediateDriver(Protocol):
 @dataclass
 class DeferredCompletionTester:
     failer: Callable[[str], None]
-    deferred: Deferred[object]
+    succeeded: list[object]
+    failed: list[Failure]
 
     def assertNoResult(self) -> None:
-        succeeded: list[object] = []
-        failed: list[Failure] = []
-        self.deferred.addCallbacks(succeeded.append, failed.append)
-        if failed:
-            failed[0].raiseException()
-        if succeeded:
-            self.failer(f"unexpected result {succeeded[0]}")
+        if self.failed:
+            self.failed[0].raiseException()
+        if self.succeeded:
+            self.failer(f"unexpected result {self.succeeded[0]}")
 
     def assertSuccessResult(self) -> None:
-        succeeded: list[object] = []
-        failed: list[Failure] = []
-        self.deferred.addCallbacks(succeeded.append, failed.append)
-        if failed:
-            failed[0].raiseException()
-        if not succeeded:
+        if self.failed:
+            self.failed[0].raiseException()
+        if not self.succeeded:
             self.failer("no result")
 
 
@@ -173,10 +168,11 @@ class ImmediateDeferred:
         failer: Callable[[str], None],
         coroutine: Coroutine[Any, Any, Any],
     ) -> CompletionTester:
-        return DeferredCompletionTester(
-            failer,
-            Deferred.fromCoroutine(coroutine),
-        )
+        succeeded: list[object] = []
+        failed: list[Failure] = []
+        deferred = Deferred.fromCoroutine(coroutine)
+        deferred.addCallbacks(succeeded.append, failed.append)
+        return DeferredCompletionTester(failer, succeeded, failed)
 
 
 def immediateTest(

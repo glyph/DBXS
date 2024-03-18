@@ -38,11 +38,25 @@ class TestFailing(TestCase):
 
     def test_failsBeforeBlocking(self) -> None:
         """
-        If an @immediateTest raises an exception, taht exception is re-raised.
+        If an @immediateTest raises an exception, that exception is re-raised.
         """
 
         @immediateTest()
         async def method(self: TestFailing, pool: MemoryPool) -> None:
+            1 / 0
+
+        with self.assertRaises(ZeroDivisionError):
+            method(self)
+
+    def test_failsAfterBlocking(self) -> None:
+        """
+        If an @immediateTest raises an exception after blocking, that exception
+        is re-raised as well.
+        """
+
+        @immediateTest()
+        async def method(self: TestFailing, pool: MemoryPool) -> None:
+            await pool.connectable.connect()
             1 / 0
 
         with self.assertRaises(ZeroDivisionError):
