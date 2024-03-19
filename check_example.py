@@ -19,15 +19,15 @@ from dbxs.dbapi import DBAPIConnection
 
 
 class QuoteDB(Protocol):
-    @query(sql="select id, contents from quote where id={id}", load=one(Quote))
+    @query(sql="SELECT id, contents FROM quote WHERE id={id}", load=one(Quote))
     async def quoteByID(self, id: int) -> Quote:
         ...
 
-    @query(sql="select id, contents from quote", load=many(Quote))
+    @query(sql="SELECT id, contents FROM quote", load=many(Quote))
     def allQuotes(self) -> AsyncIterable[Quote]:
         ...
 
-    @statement(sql="insert into quote (contents) values ({text})")
+    @statement(sql="INSERT INTO quote (contents) VALUES ({text})")
     async def addQuote(self, text: str) -> None:
         ...
 
@@ -35,7 +35,7 @@ class QuoteDB(Protocol):
 def sqliteWithSchema() -> DBAPIConnection:
     c = connect(":memory:")
     c.execute(
-        "create table quote (contents, id integer primary key autoincrement)"
+        "CREATE TABLE quote (contents, id INTEGER PRIMARY KEY AUTOINCREMENT)"
     )
     c.commit()
     return c
