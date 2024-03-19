@@ -59,10 +59,10 @@ class DBAPICursor(Protocol):
     ) -> object:
         ...
 
-    def executemany(
-        self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
-    ) -> object:
-        ...
+    # def executemany(
+    #     self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
+    # ) -> object:
+    #     ...
 
     def fetchone(self) -> Optional[Sequence[Any]]:
         ...

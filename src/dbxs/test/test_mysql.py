@@ -10,6 +10,8 @@ from twisted.trial.unittest import SynchronousTestCase as TestCase
 from dbxs import accessor, many, one, query
 
 from .._typing_compat import Protocol
+from ..async_dbapi import AsyncConnectable
+from .common_adapter_tests import CommonTests
 
 
 try:
@@ -17,6 +19,7 @@ try:
 except ImportError:
     cantFindMySQL = "mysql-connector-python not installed"
 else:
+    from mysql.connector import NUMBER, STRING
     from mysql.connector.aio import connect as connectAsync
     from mysql.connector.aio.abstracts import MySQLConnectionAbstract
 
@@ -106,3 +109,19 @@ class AccessTestCase(TestCase):
             self.assertEqual([("hello", 1), ("second", 2)], everything)
 
         get_event_loop().run_until_complete(_())
+
+
+class MySQLTests(CommonTests):
+    def createConnectable(self) -> AsyncConnectable:
+        return adaptMySQL(configuredConnectAsync)
+
+    def numberType(self) -> object:
+        return NUMBER
+
+    def stringType(self) -> object:
+        return STRING
+
+    def valuesSQL(self) -> str:
+        return (
+            "select * from (values row(1, '2')) as named(firstcol, secondcol)"
+        )

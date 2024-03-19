@@ -11,6 +11,22 @@ from dbxs import accessor, many, one, query
 from dbxs.async_dbapi import transaction
 
 from .._typing_compat import Protocol
+from ..async_dbapi import AsyncConnectable
+from .common_adapter_tests import CommonTests
+
+
+class PGTests(CommonTests):
+    def createConnectable(self) -> AsyncConnectable:
+        return adaptPostgreSQL(AsyncConnection.connect)
+
+    def numberType(self) -> object:
+        return NUMBER
+
+    def stringType(self) -> object:
+        return STRING
+
+    def valuesSQL(self) -> str:
+        return "select * from (values (1, '2')) as named(firstcol, secondcol)"
 
 
 try:
