@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Awaitable, Callable, Optional, Sequence, Union
 
 from psycopg import (
     AsyncConnection as PGAsyncConnection,
@@ -9,8 +9,14 @@ from psycopg import (
     paramstyle as psycopgParamStyle,
 )
 
-from ..async_dbapi import AsyncConnection, AsyncCursor, ParamStyle
+from ..async_dbapi import (
+    AsyncConnectable,
+    AsyncConnection,
+    AsyncCursor,
+    ParamStyle,
+)
 from ..dbapi import DBAPIColumnDescription
+from .connectable import connectableFor
 
 
 @dataclass
@@ -80,13 +86,19 @@ class _PG2DBXSAdapter:
         await self._pgcon.close()
 
 
-def adaptPostgreSQL(connection: PGAsyncConnection) -> AsyncConnection:
+def adaptPostgreSQL(
+    connect: Callable[[], Awaitable[PGAsyncConnection]]
+) -> AsyncConnectable:
     """
     Adapt a connection created by U{psycopg.AsyncConnection.connect
     <https://www.psycopg.org/psycopg3/docs/api/connections.html#psycopg.AsyncConnection.connect>}
     to an L{AsyncConnection}.
     """
-    return _PG2DBXSAdapter(connection)
+
+    async def convert() -> AsyncConnection:
+        return _PG2DBXSAdapter(await connect())
+
+    return connectableFor(convert)
 
 
 __all__ = [
