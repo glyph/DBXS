@@ -4,6 +4,8 @@ L{dbxs.dbapi}, but with C{await} put in the relevant places to make them
 asynchronous.
 """
 
+from __future__ import annotations
+
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Optional, Sequence, TypeVar, Union
 
