@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 from psycopg import (
     AsyncConnection as PGAsyncConnection,
@@ -45,7 +45,7 @@ class _PG2DBXSCursor:
     async def execute(
         self,
         operation: str,
-        parameters: Union[Sequence[Any], Mapping[str, Any]] = (),
+        parameters: Union[Sequence[Any], dict[str, Any]] = (),
     ) -> object:
         return await self._pgcur.execute(operation, parameters)
 

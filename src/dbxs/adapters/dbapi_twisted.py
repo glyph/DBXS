@@ -19,7 +19,6 @@ from typing import (
     Any,
     Callable,
     List,
-    Mapping,
     Optional,
     Sequence,
     Type,
@@ -160,7 +159,7 @@ class ThreadedCursorAdapter(AsyncCursor):
     async def execute(
         self,
         operation: str,
-        parameters: Sequence[Any] | Mapping[str, Any] = (),
+        parameters: Sequence[Any] | dict[str, Any] = (),
     ) -> object:
         """
         Execute the given statement.

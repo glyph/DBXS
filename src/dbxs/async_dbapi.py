@@ -5,15 +5,7 @@ asynchronous.
 """
 
 from contextlib import asynccontextmanager
-from typing import (
-    Any,
-    AsyncIterator,
-    Mapping,
-    Optional,
-    Sequence,
-    TypeVar,
-    Union,
-)
+from typing import Any, AsyncIterator, Optional, Sequence, TypeVar, Union
 
 from ._typing_compat import Protocol
 from .dbapi import DBAPIColumnDescription
@@ -63,7 +55,7 @@ class AsyncCursor(Protocol):
     async def execute(
         self,
         operation: str,
-        parameters: Union[Sequence[Any], Mapping[str, Any]] = (),
+        parameters: Union[Sequence[Any], dict[str, Any]] = (),
     ) -> object:
         ...
 

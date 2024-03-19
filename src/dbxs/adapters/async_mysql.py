@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 from mysql.connector import paramstyle as mysqlParamStyle
 from mysql.connector.aio.abstracts import (
@@ -45,12 +45,8 @@ class _MYSQL2DBXSCursor:
     async def execute(
         self,
         operation: str,
-        parameters: Union[Sequence[Any], Mapping[str, Any]] = (),
+        parameters: Union[Sequence[Any], dict[str, Any]] = (),
     ) -> object:
-        if isinstance(parameters, Mapping) and not isinstance(
-            parameters, dict
-        ):
-            parameters = dict(parameters)
         await self._mysqlcur.execute(operation, parameters)
         return None
 
