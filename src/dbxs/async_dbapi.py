@@ -61,10 +61,10 @@ class AsyncCursor(Protocol):
     ) -> object:
         ...
 
-    async def executemany(
-        self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
-    ) -> object:
-        ...
+    # async def executemany(
+    #     self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
+    # ) -> object:
+    #     ...
 
     async def close(self) -> None:
         ...

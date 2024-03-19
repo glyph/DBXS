@@ -57,11 +57,11 @@ class _MYSQL2DBXSCursor:
         await self._mysqlcur.execute(operation, parameters)
         return None
 
-    async def executemany(
-        self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
-    ) -> object:
-        await self._mysqlcur.executemany(__operation, __seq_of_parameters)
-        return None
+    # async def executemany(
+    #     self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
+    # ) -> object:
+    #     await self._mysqlcur.executemany(__operation, __seq_of_parameters)
+    #     return None
 
     async def close(self) -> None:
         await self._mysqlcur.close()

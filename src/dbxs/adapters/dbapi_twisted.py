@@ -161,13 +161,13 @@ class ThreadedCursorAdapter(AsyncCursor):
 
         return await self._exclusive.perform(query)
 
-    async def executemany(
-        self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
-    ) -> object:
-        def query() -> object:
-            return self._cursor.executemany(__operation, __seq_of_parameters)
+    # async def executemany(
+    #     self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
+    # ) -> object:
+    #     def query() -> object:
+    #         return self._cursor.executemany(__operation, __seq_of_parameters)
 
-        return await self._exclusive.perform(query)
+    #     return await self._exclusive.perform(query)
 
     async def close(self) -> None:
         """

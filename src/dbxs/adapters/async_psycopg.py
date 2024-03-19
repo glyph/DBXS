@@ -57,11 +57,11 @@ class _PG2DBXSCursor:
     ) -> object:
         return await self._pgcur.execute(operation, parameters)
 
-    async def executemany(
-        self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
-    ) -> object:
-        await self._pgcur.executemany(__operation, __seq_of_parameters)
-        return None
+    # async def executemany(
+    #     self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
+    # ) -> object:
+    #     await self._pgcur.executemany(__operation, __seq_of_parameters)
+    #     return None
 
     async def close(self) -> None:
         await self._pgcur.close()

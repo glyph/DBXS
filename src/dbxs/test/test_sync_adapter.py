@@ -125,13 +125,13 @@ class FakeDBAPICursor:
         )
         return None
 
-    def executemany(
-        self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
-    ) -> object:
-        self.operationsByThread.append(
-            ("executemany", self.connectionID, pretendThreadID)
-        )
-        return None
+    # def executemany(
+    #     self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
+    # ) -> object:
+    #     self.operationsByThread.append(
+    #         ("executemany", self.connectionID, pretendThreadID)
+    #     )
+    #     return None
 
     def fetchone(self) -> Optional[Sequence[Any]]:
         self.operationsByThread.append(
@@ -324,9 +324,9 @@ class ResourceManagementTests(SyncTestCase):
             )
             self.assertEqual(await cur.rowcount(), 0)
             await cur.execute("test expr", ["some", "params"]), []
-            await cur.executemany(
-                "lots of operations", [["parameter", "seq"], ["etc", "etc"]]
-            )
+            # await cur.executemany(
+            #     "lots of operations", [["parameter", "seq"], ["etc", "etc"]]
+            # )
             self.assertIs(await cur.fetchone(), None)
             self.assertEqual(await cur.fetchmany(7), [])
             self.assertEqual(await cur.fetchall(), [])
@@ -346,7 +346,7 @@ class ResourceManagementTests(SyncTestCase):
                 "description",
                 "rowcount",
                 "execute",
-                "executemany",
+                # "executemany",
                 "fetchone",
                 "fetchmany",
                 "fetchall",
