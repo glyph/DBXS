@@ -50,6 +50,9 @@ extend-ignore =
 
     ######## WARNINGS ABOVE SHOULD BE FIXED ########
 
+    # module level import not at top of file
+    E402,
+
     # Invalid first argument used for instance method
     B902,
 
