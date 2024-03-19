@@ -1,3 +1,5 @@
+# -*- test-case-name: dbxs.test.test_pg -*-
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -16,7 +18,7 @@ from ..async_dbapi import (
     ParamStyle,
 )
 from ..dbapi import DBAPIColumnDescription
-from .connectable import connectableFor
+from .async_pool import newPool
 
 
 @dataclass
@@ -98,7 +100,7 @@ def adaptPostgreSQL(
     async def convert() -> AsyncConnection:
         return _PG2DBXSAdapter(await connect())
 
-    return connectableFor(convert)
+    return newPool(convert)
 
 
 __all__ = [

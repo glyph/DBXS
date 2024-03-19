@@ -90,7 +90,7 @@ class AccessTestCase(TestCase):
             self.assertIn(
                 "MySQL",
                 await pgia(
-                    adaptMySQL(await configuredConnectAsync())
+                    await adaptMySQL(configuredConnectAsync).connect()
                 ).getMysqlVersion(),
             )
 
@@ -100,7 +100,7 @@ class AccessTestCase(TestCase):
         async def _() -> None:
             everything = []
             async for row in pgia(
-                adaptMySQL(await configuredConnectAsync())
+                await adaptMySQL(configuredConnectAsync).connect()
             ).cannedValues("hello", 1, "second", 2):
                 everything.append((row.name, row.value))
             self.assertEqual([("hello", 1), ("second", 2)], everything)

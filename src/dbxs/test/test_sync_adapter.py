@@ -36,11 +36,8 @@ from twisted.trial.unittest import (
 
 from .._testing import sqlite3Connector
 from .._typing_compat import ParamSpec
-from ..adapters.dbapi_twisted import (
-    ConnectionPool,
-    ExclusiveWorkQueue,
-    adaptSynchronousDriver,
-)
+from ..adapters.async_pool import _ConnectionPool
+from ..adapters.dbapi_twisted import ExclusiveWorkQueue, adaptSynchronousDriver
 from ..async_dbapi import AsyncConnectable, InvalidConnection, transaction
 from ..dbapi import DBAPIColumnDescription, DBAPIConnection, DBAPICursor
 
@@ -302,9 +299,9 @@ class ResourceManagementTests(SyncTestCase):
             callFromThread=self.queue.append,
         )
         assert isinstance(
-            pool, ConnectionPool
+            pool, _ConnectionPool
         ), "this should be the runtime type"
-        self.poolInternals: ConnectionPool = pool
+        self.poolInternals: _ConnectionPool = pool
 
     def flush(self) -> None:
         """

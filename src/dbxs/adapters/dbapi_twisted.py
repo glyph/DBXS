@@ -11,20 +11,10 @@ analog to L{twisted.internet.interfaces.IReactorThreads.callFromThread}.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from queue import Queue
 from threading import Thread
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Awaitable,
-    Callable,
-    List,
-    Optional,
-    Sequence,
-    Type,
-    TypeVar,
-)
+from typing import Any, Awaitable, Callable, Optional, Sequence, TypeVar
 
 from twisted._threads import AlreadyQuit, ThreadWorker
 from twisted._threads._ithreads import IExclusiveWorker
@@ -35,10 +25,10 @@ from ..async_dbapi import (
     AsyncConnectable,
     AsyncConnection,
     AsyncCursor,
-    InvalidConnection,
     ParamStyle,
 )
 from ..dbapi import DBAPIColumnDescription, DBAPIConnection, DBAPICursor
+from .async_pool import newPool
 
 
 _T = TypeVar("_T")
@@ -187,7 +177,7 @@ class ThreadedCursorAdapter(AsyncCursor):
 
 
 @dataclass
-class ThreadedConnectionAdapter:
+class _ThreadedConnectionAdapter:
     """
     Asynchronous database connection that binds to a specific thread.
     """
@@ -244,138 +234,22 @@ class ThreadedConnectionAdapter:
         await self._exclusive.perform(c.commit)
 
 
-@dataclass(eq=False)
-class _PooledConnectionGuard:
-    """
-    Pooled connection adapter that re-adds itself back to the pool upon commit
-    or rollback.
-    """
-
-    _adapter: Optional[AsyncConnection]
-    _pool: ConnectionPool
-    _cursors: List[AsyncCursor]
-
-    def _original(self, invalidate: bool) -> AsyncConnection:
-        """
-        Check for validity, return the underlying connection, and then
-        optionally invalidate this adapter.
-        """
-        a = self._adapter
-        if a is None:
-            raise InvalidConnection("The connection has already been closed.")
-        if invalidate:
-            self._adapter = None
-        return a
-
-    @property
-    def paramstyle(self) -> str:
-        return self._original(False).paramstyle
-
-    async def cursor(self) -> AsyncCursor:
-        it = await self._original(False).cursor()
-        self._cursors.append(it)
-        return it
-
-    async def rollback(self) -> None:
-        """
-        Roll back the transaction, returning the connection to the pool.
-        """
-        a = self._original(True)
-        try:
-            await a.rollback()
-        finally:
-            await self._pool._checkin(self, a)
-
-    async def _closeCursors(self) -> None:
-        for cursor in self._cursors:
-            await cursor.close()
-
-    async def commit(self) -> None:
-        """
-        Commit the transaction, returning the connection to the pool.
-        """
-        await self._closeCursors()
-        a = self._original(True)
-        try:
-            await a.commit()
-        finally:
-            await self._pool._checkin(self, a)
-
-    async def close(self) -> None:
-        """
-        Close the underlying connection, removing it from the pool.
-        """
-        await self._closeCursors()
-        await self._original(True).close()
-
-
-def synthesizeConnector(
+def _synthesizeConnector(
     createWorker: Callable[[], IExclusiveWorker],
     deliver: Callable[[Callable[[], None]], None],
     connectCallable: Callable[[], DBAPIConnection],
     paramstyle: ParamStyle,
 ) -> Callable[[], Awaitable[AsyncConnection]]:
-    async def connector() -> ThreadedConnectionAdapter:
+    """
+    Creates a callable that creates an AsyncConnection via a threadpool.
+    """
+
+    async def connector() -> _ThreadedConnectionAdapter:
         e = ExclusiveWorkQueue(createWorker(), deliver)
         connectedInThread = await e.perform(connectCallable)
-        return ThreadedConnectionAdapter(connectedInThread, e, paramstyle)
+        return _ThreadedConnectionAdapter(connectedInThread, e, paramstyle)
 
     return connector
-
-
-@dataclass(eq=False)
-class ConnectionPool:
-    """
-    Database engine and connection pool.
-    """
-
-    _newConnection: Callable[[], Awaitable[AsyncConnection]]
-    _idleMax: int
-    _idlers: List[AsyncConnection] = field(default_factory=list)
-    _active: List[_PooledConnectionGuard] = field(default_factory=list)
-
-    async def connect(self) -> AsyncConnection:
-        """
-        Checkout a new connection from the pool, connecting to the database and
-        opening a thread first if necessary.
-        """
-        txn = _PooledConnectionGuard(
-            (
-                self._idlers.pop()
-                if self._idlers
-                else await self._newConnection()
-            ),
-            self,
-            [],
-        )
-        self._active.append(txn)
-        return txn
-
-    async def _checkin(
-        self,
-        txn: _PooledConnectionGuard,
-        connection: AsyncConnection,
-    ) -> None:
-        """
-        Check a connection back in to the pool, closing and discarding it.
-        """
-        self._active.remove(txn)
-        if len(self._idlers) < self._idleMax:
-            self._idlers.append(connection)
-        else:
-            await connection.close()
-
-    async def quit(self) -> None:
-        """
-        Close all outstanding connections and shut down the underlying
-        threadpool.
-        """
-        self._idleMax = 0
-        while self._active:
-            await self._active[0].rollback()
-
-        while self._idlers:
-            await self._idlers.pop().close()
 
 
 def adaptSynchronousDriver(
@@ -387,7 +261,8 @@ def adaptSynchronousDriver(
     maxIdleConnections: int = 5,
 ) -> AsyncConnectable:
     """
-    Adapt a synchronous DB-API driver to be an L{AsyncConnectable}.
+    Adapt a synchronous DB-API 2.0 driver to be an L{AsyncConnectable} a
+    Twisted thread pool.
 
     @note: If you do not pass your own C{callFromThread} parameter, this
         requires the Twisted reactor to be running in order to process
@@ -401,19 +276,13 @@ def adaptSynchronousDriver(
     if createWorker is None:
         createWorker = _newThread
 
-    return ConnectionPool(
-        synthesizeConnector(
+    return newPool(
+        _synthesizeConnector(
             createWorker, callFromThread, connectCallable, paramstyle
         ),
         maxIdleConnections,
     )
 
-
-if TYPE_CHECKING:
-    _1: Type[AsyncCursor] = ThreadedCursorAdapter
-    _2: Type[AsyncConnection] = ThreadedConnectionAdapter
-    _4: Type[AsyncConnection] = _PooledConnectionGuard
-    _3: Type[AsyncConnectable] = ConnectionPool
 
 __all__ = [
     "adaptSynchronousDriver",

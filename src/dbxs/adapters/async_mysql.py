@@ -1,7 +1,8 @@
+# -*- test-case-name: dbxs.test.test_mysql -*-
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Awaitable, Callable, Optional, Sequence, Union
 
 from mysql.connector import paramstyle as mysqlParamStyle
 from mysql.connector.aio.abstracts import (
@@ -9,8 +10,14 @@ from mysql.connector.aio.abstracts import (
     MySQLCursorAbstract,
 )
 
-from ..async_dbapi import AsyncConnection, AsyncCursor, ParamStyle
+from ..async_dbapi import (
+    AsyncConnectable,
+    AsyncConnection,
+    AsyncCursor,
+    ParamStyle,
+)
 from ..dbapi import DBAPIColumnDescription
+from .async_pool import newPool
 
 
 @dataclass
@@ -81,13 +88,19 @@ class _MYSQL2DBXSAdapter:
         await self._mysqlcon.close()
 
 
-def adaptMySQL(connection: MySQLConnectionAbstract) -> AsyncConnection:
+def adaptMySQL(
+    connection: Callable[[], Awaitable[MySQLConnectionAbstract]]
+) -> AsyncConnectable:
     """
     Adapt a connection created by U{mysql.connector.aio.connect
     <https://dev.mysql.com/doc/connector-python/en/connector-python-asyncio.html>}
     to an L{AsyncConnection}.
     """
-    return _MYSQL2DBXSAdapter(connection)
+
+    async def convert() -> AsyncConnection:
+        return _MYSQL2DBXSAdapter(await connection())
+
+    return newPool(convert)
 
 
 __all__ = [
