@@ -117,6 +117,9 @@ class AccessTestCase(TestCase):
 
 
 class MySQLTests(CommonTests):
+    if cantFindMySQL:
+        skip = cantFindMySQL
+
     def createConnectable(self) -> AsyncConnectable:
         return adaptMySQL(configuredConnectAsync)
 

@@ -15,20 +15,6 @@ from ..async_dbapi import AsyncConnectable
 from .common_adapter_tests import CommonTests
 
 
-class PGTests(CommonTests):
-    def createConnectable(self) -> AsyncConnectable:
-        return adaptPostgreSQL(AsyncConnection.connect)
-
-    def numberType(self) -> object:
-        return NUMBER
-
-    def stringType(self) -> object:
-        return STRING
-
-    def valuesSQL(self) -> str:
-        return "select * from (values (1, '2')) as named(firstcol, secondcol)"
-
-
 try:
     from psycopg import connect
 except ImportError:
@@ -139,3 +125,20 @@ class AccessTestCase(TestCase):
                 self.assertEqual(STRING, typecode2)
 
         get_event_loop().run_until_complete(_())
+
+
+class PGTests(CommonTests):
+    if cantFindPG:
+        skip = cantFindPG
+
+    def createConnectable(self) -> AsyncConnectable:
+        return adaptPostgreSQL(AsyncConnection.connect)
+
+    def numberType(self) -> object:
+        return NUMBER
+
+    def stringType(self) -> object:
+        return STRING
+
+    def valuesSQL(self) -> str:
+        return "select * from (values (1, '2')) as named(firstcol, secondcol)"
