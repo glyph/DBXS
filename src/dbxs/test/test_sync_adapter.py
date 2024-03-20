@@ -29,18 +29,17 @@ from zope.interface import implementer
 from twisted._threads import AlreadyQuit
 from twisted._threads._ithreads import IExclusiveWorker
 from twisted.internet.defer import Deferred
-from twisted.trial.unittest import TestCase
+from twisted.trial.unittest import (
+    SynchronousTestCase as SyncTestCase,
+    TestCase as AsyncTestCase,
+)
 
-from .._dbapi_async_twisted import ExclusiveWorkQueue, ThreadedConnectionPool
 from .._testing import sqlite3Connector
 from .._typing_compat import ParamSpec
-from ..dbapi_async import (
-    AsyncConnectable,
-    InvalidConnection,
-    adaptSynchronousDriver,
-    transaction,
-)
-from ..dbapi_sync import DBAPIColumnDescription, DBAPIConnection, DBAPICursor
+from ..adapters.async_pool import _ConnectionPool
+from ..adapters.dbapi_twisted import ExclusiveWorkQueue, adaptSynchronousDriver
+from ..async_dbapi import AsyncConnectable, InvalidConnection, transaction
+from ..dbapi import DBAPIColumnDescription, DBAPIConnection, DBAPICursor
 
 
 pretendThreadID = 0
@@ -126,13 +125,13 @@ class FakeDBAPICursor:
         )
         return None
 
-    def executemany(
-        self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
-    ) -> object:
-        self.operationsByThread.append(
-            ("executemany", self.connectionID, pretendThreadID)
-        )
-        return None
+    # def executemany(
+    #     self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
+    # ) -> object:
+    #     self.operationsByThread.append(
+    #         ("executemany", self.connectionID, pretendThreadID)
+    #     )
+    #     return None
 
     def fetchone(self) -> Optional[Sequence[Any]]:
         self.operationsByThread.append(
@@ -140,11 +139,11 @@ class FakeDBAPICursor:
         )
         return None
 
-    def fetchmany(self, __size: int = 0) -> Sequence[Sequence[Any]]:
-        self.operationsByThread.append(
-            ("fetchmany", self.connectionID, pretendThreadID)
-        )
-        return []
+    # def fetchmany(self, __size: int = 0) -> Sequence[Sequence[Any]]:
+    #     self.operationsByThread.append(
+    #         ("fetchmany", self.connectionID, pretendThreadID)
+    #     )
+    #     return []
 
     def fetchall(self) -> Sequence[Sequence[Any]]:
         self.operationsByThread.append(
@@ -195,7 +194,7 @@ if TYPE_CHECKING:
     _2: Type[DBAPIConnection] = FakeDBAPIConnection
 
 
-def realThreadedAdapter(testCase: TestCase) -> AsyncConnectable:
+def realThreadedAdapter(testCase: AsyncTestCase) -> AsyncConnectable:
     """
     Create an AsyncConnectable using real threads and scheduling its
     non-threaded callbacks on the Twisted reactor, suitable for using in a
@@ -263,7 +262,7 @@ class SampleError(Exception):
     """
 
 
-class ResourceManagementTests(TestCase):
+class ResourceManagementTests(SyncTestCase):
     """
     Tests to make sure that various thread resources are managed correctly.
     """
@@ -292,14 +291,17 @@ class ResourceManagementTests(TestCase):
             )
             return conn
 
-        self.poolInternals = ThreadedConnectionPool(
+        pool = self.pool = adaptSynchronousDriver(
             makeConnection,
             "qmark",
-            3,
-            newWorker,
-            self.queue.append,
+            maxIdleConnections=3,
+            createWorker=newWorker,
+            callFromThread=self.queue.append,
         )
-        self.pool: AsyncConnectable = self.poolInternals
+        assert isinstance(
+            pool, _ConnectionPool
+        ), "this should be the runtime type"
+        self.poolInternals: _ConnectionPool = pool
 
     def flush(self) -> None:
         """
@@ -322,11 +324,11 @@ class ResourceManagementTests(TestCase):
             )
             self.assertEqual(await cur.rowcount(), 0)
             await cur.execute("test expr", ["some", "params"]), []
-            await cur.executemany(
-                "lots of operations", [["parameter", "seq"], ["etc", "etc"]]
-            )
+            # await cur.executemany(
+            #     "lots of operations", [["parameter", "seq"], ["etc", "etc"]]
+            # )
             self.assertIs(await cur.fetchone(), None)
-            self.assertEqual(await cur.fetchmany(7), [])
+            # self.assertEqual(await cur.fetchmany(7), [])
             self.assertEqual(await cur.fetchall(), [])
             await cur.close()
             await con.commit()
@@ -344,9 +346,9 @@ class ResourceManagementTests(TestCase):
                 "description",
                 "rowcount",
                 "execute",
-                "executemany",
+                # "executemany",
                 "fetchone",
-                "fetchmany",
+                # "fetchmany",
                 "fetchall",
                 "close",
                 "close",
@@ -551,7 +553,7 @@ class ResourceManagementTests(TestCase):
         self.assertEqual(self.threads[1].quitted, True)
 
 
-class InternalSafetyTests(TestCase):
+class InternalSafetyTests(SyncTestCase):
     """
     Tests for internal safety mechanisms; states which I{should} be unreachable
     via the public API but should nonetheless be reported.
@@ -572,7 +574,7 @@ class InternalSafetyTests(TestCase):
         self.assertEqual(stuff, [])
 
 
-class SyncAdapterTests(TestCase):
+class SyncAdapterTests(AsyncTestCase):
     """
     Integration tests for L{adaptSynchronousDriver}.
     """
@@ -596,11 +598,12 @@ class SyncAdapterTests(TestCase):
             insert into sample values (3, 'more'), (4, 'even more')
             """
         )
-        await cur.execute(query)
-        self.assertEqual(
-            await cur.fetchmany(3), [(1, "hello"), (2, "goodbye"), (3, "more")]
-        )
-        self.assertEqual(await cur.fetchmany(3), [(4, "even more")])
+        # await cur.execute(query)
+        # self.assertEqual(
+        #     await cur.fetchmany(3),
+        #     [(1, "hello"), (2, "goodbye"), (3, "more")],
+        # )
+        # self.assertEqual(await cur.fetchmany(3), [(4, "even more")])
 
     @eagerDeferredCoroutine
     async def test_errors(self) -> None:

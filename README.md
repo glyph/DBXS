@@ -80,40 +80,45 @@ drivers and pytest is definitely on the roadmap.)
 Using it looks like this:
 
 ```python
+@dataclass
 class Quote:
     db: QuoteDB
     id: int
     contents: str
 
-from dbxs import query, one, many
-from dbxs.dbapi_async import adaptSynchronousDriver
+from dbxs import accessor, many, one, query, statement
 
 class QuoteDB(Protocol):
-    @query(
-        sql="select id, contents from quote where id = {id}",
-        load=one(Quote),
-    )
-    async def quoteByID(self, id: int) -> Quote:
-        ...
+    @query(sql="SELECT id, contents FROM quote WHERE id={id}", load=one(Quote))
+    async def quoteByID(self, id: int) -> Quote: ...
 
-    @query(
-        sql="select id, contents from quote",
-        load=many(Quote),
-    )
-    def allQuotes(self) -> AsyncIterable[Quote]:
-        ...
+    @query(sql="SELECT id, contents FROM quote", load=many(Quote))
+    def allQuotes(self) -> AsyncIterable[Quote]: ...
 
+    @statement(sql="INSERT INTO quote (contents) VALUES ({text})")
+    async def addQuote(self, text: str) -> None: ...
+
+from dbxs.dbapi import DBAPIConnection
+def sqliteWithSchema() -> DBAPIConnection:
+    c = connect(":memory:")
+    c.execute(
+        "CREATE TABLE quote (contents, id INTEGER PRIMARY KEY AUTOINCREMENT)"
+    )
+    c.commit()
+    return c
+
+from dbxs.adapters.dbapi_twisted import adaptSynchronousDriver
+driver = adaptSynchronousDriver(sqliteWithSchema, paramstyle)
 quotes = accessor(QuoteDB)
 
-driver = adaptSynchronousDriver(lambda: sqlite3.connect(...))
-
 async def main() -> None:
+    from dbxs.async_dbapi import transaction
     async with transaction(driver) as t:
         quotedb: QuoteDB = quotes(t)
-        print("quote 1", (await quotedb.quoteByID(1)).contents)
+        await quotedb.addQuote("hello, world")
         async for quote in quotedb.allQuotes():
-            print("quote", quote.id, quote.contents)
-
+            matched = (await quotedb.quoteByID(quote.id)) == quote
+            print(f"quote ({quote.id}) {quote.contents!r} {matched}")
 ```
 
 ### Previous SQL Interface Solutions

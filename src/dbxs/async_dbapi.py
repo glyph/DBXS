@@ -1,16 +1,23 @@
-from contextlib import asynccontextmanager
-from typing import (
-    Any,
-    AsyncIterator,
-    Mapping,
-    Optional,
-    Sequence,
-    TypeVar,
-    Union,
-)
+"""
+This is a collection of abstract types that are I{like} the PEP 249 types in
+L{dbxs.dbapi}, but with C{await} put in the relevant places to make them
+asynchronous.
+"""
 
-from ._dbapi_types import DBAPIColumnDescription
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator, Optional, Sequence, TypeVar, Union
+
 from ._typing_compat import Protocol
+from .dbapi import DBAPIColumnDescription
+
+
+class InvalidConnection(Exception):
+    """
+    The connection has already been closed, or the transaction has already been
+    committed.
+    """
 
 
 ParamStyle = str
@@ -28,7 +35,9 @@ class AsyncCursor(Protocol):
     Asynchronous Cursor Object.
     """
 
-    async def description(self) -> Optional[Sequence[DBAPIColumnDescription]]:
+    async def description(
+        self,
+    ) -> Optional[Sequence[DBAPIColumnDescription]]:
         ...
 
     async def rowcount(self) -> int:
@@ -37,10 +46,10 @@ class AsyncCursor(Protocol):
     async def fetchone(self) -> Optional[Sequence[Any]]:
         ...
 
-    async def fetchmany(
-        self, size: Optional[int] = None
-    ) -> Sequence[Sequence[Any]]:
-        ...
+    # async def fetchmany(
+    #     self, size: Optional[int] = None
+    # ) -> Sequence[Sequence[Any]]:
+    #     ...
 
     async def fetchall(self) -> Sequence[Sequence[Any]]:
         ...
@@ -48,14 +57,14 @@ class AsyncCursor(Protocol):
     async def execute(
         self,
         operation: str,
-        parameters: Union[Sequence[Any], Mapping[str, Any]] = (),
+        parameters: Union[Sequence[Any], dict[str, Any]] = (),
     ) -> object:
         ...
 
-    async def executemany(
-        self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
-    ) -> object:
-        ...
+    # async def executemany(
+    #     self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
+    # ) -> object:
+    #     ...
 
     async def close(self) -> None:
         ...

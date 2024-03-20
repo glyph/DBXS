@@ -183,18 +183,54 @@ jobs:
 
 
   unit:
-    name: "Py:${{ matrix.python-version }} - Tw:${{ matrix.twisted-version }} - ${{ matrix.os }}"
+    name: "${{ matrix.tox-suffix }}Py:${{ matrix.python-version }} - Tw:${{ matrix.twisted-version }} - ${{ matrix.os }}"
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     continue-on-error: ${{ matrix.optional }}
+
+    services:
+      mysql:
+        image: "${{ matrix.mysql-image }}"
+        env:
+          MYSQL_ROOT_PASSWORD: "ghamysqlpassword"
+          MYSQL_DATABASE: "ghamysqldb"
+        ports:
+          - "3306:3306"
+        options: >-
+          --health-cmd "mysqladmin ping -ppass"
+          --health-interval 10s
+          --health-start-period 10s
+          --health-timeout 5s
+          --health-retries 10
+
+      postgres16:
+
+        # https://github.com/actions/runner/issues/822
+        image: "${{ matrix.pg-image }}"
+
+        env:
+          POSTGRES_DB: "ghapgdb"
+          POSTGRES_USER: "ghapguser"
+          POSTGRES_PASSWORD: "ghapgpass"
+          POSTGRES_PORT: "5432"
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     strategy:
       matrix:
         os: ["ubuntu-latest"]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         twisted-version: ["21.2", "22.1", "23.10"]
         tox-prefix: ["coverage"]
+        tox-suffix: [""]
         optional: [false]
+        pg-image: [""]
         include:
           - os: "ubuntu-latest"
             python-version: "pypy-3.8"
@@ -207,6 +243,20 @@ jobs:
             python-version: "pypy-3.9"
             twisted-version: "current"
             tox-prefix: "coverage"
+            optional: false
+          - os: "ubuntu-latest"
+            python-version: "3.12"
+            twisted-version: "23.10"
+            tox-prefix: "coverage"
+            tox-suffix: "-postgres"
+            pg-image: "postgres:16"
+            optional: false
+          - os: "ubuntu-latest"
+            python-version: "3.12"
+            twisted-version: "23.10"
+            tox-prefix: "coverage"
+            tox-suffix: "-mysql"
+            mysql-image: "mysql:8.0.29"
             optional: false
 
     steps:
@@ -239,7 +289,7 @@ jobs:
           tw = "${{ matrix.twisted-version }}"
           tw = tw.replace(".", "")
 
-          env = f"${{ matrix.tox-prefix }}-py{py}-tw{tw}"
+          env = f"${{ matrix.tox-prefix }}-py{py}-tw{tw}${{ matrix.tox-suffix }}"
 
           print(f"TOX_ENV={env}")
 
@@ -259,6 +309,19 @@ jobs:
 
       - name: Run unit tests
         run: tox run -e ${TOX_ENV}
+        env:
+          PGHOST: "localhost"
+          PGPORT: "5432"
+
+          PGUSER: "ghapguser"
+          PGDATABASE: "ghapgdb"
+          PGPASSWORD: "ghapgpass"
+
+          MYSQL_USER: "root"
+          MYSQL_PWD: "ghamysqlpassword"
+          MYSQL_DATABASE: "ghamysqldb"
+          MYSQL_HOST: "localhost"
+          MYSQL_PORT: "3306"
 
       - name: Combine coverage
         run: tox run -e coverage_combine,coverage_report

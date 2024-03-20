@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from inspect import BoundArguments, signature
+from inspect import BoundArguments, isawaitable, signature
 from typing import (
     Any,
     AsyncIterable,
@@ -20,7 +20,7 @@ from typing import (
 )
 
 from ._typing_compat import ParamSpec, Protocol
-from .dbapi_async import AsyncConnection, AsyncCursor
+from .async_dbapi import AsyncConnection, AsyncCursor
 
 
 T = TypeVar("T")
@@ -68,7 +68,7 @@ def one(
     Fetch a single result with a translator function.
     """
 
-    async def translate(db: object, cursor: AsyncCursor) -> T:
+    async def translateOne(db: object, cursor: AsyncCursor) -> T:
         rows = await cursor.fetchall()
         if len(rows) < 1:
             raise NotEnoughResults()
@@ -76,7 +76,7 @@ def one(
             raise TooManyResults()
         return load(db, *rows[0])
 
-    return translate
+    return translateOne
 
 
 def maybe(
@@ -87,7 +87,7 @@ def maybe(
     if it's not found.
     """
 
-    async def translate(db: object, cursor: AsyncCursor) -> Optional[T]:
+    async def translateMaybe(db: object, cursor: AsyncCursor) -> Optional[T]:
         rows = await cursor.fetchall()
         if len(rows) < 1:
             return None
@@ -95,7 +95,7 @@ def maybe(
             raise TooManyResults()
         return load(db, *rows[0])
 
-    return translate
+    return translateMaybe
 
 
 def many(
@@ -105,14 +105,16 @@ def many(
     Fetch multiple results with a function to translate rows.
     """
 
-    async def translate(db: object, cursor: AsyncCursor) -> AsyncIterable[T]:
+    async def translateMany(
+        db: object, cursor: AsyncCursor
+    ) -> AsyncIterable[T]:
         while True:
             row = await cursor.fetchone()
             if row is None:
                 return
             yield load(db, *row)
 
-    return translate
+    return translateMany
 
 
 async def zero(loader: object, cursor: AsyncCursor) -> None:
@@ -131,14 +133,18 @@ METADATA_KEY = "__query_metadata__"
 @dataclass
 class MaybeAIterable:
     down: Any
+    cursor: AsyncCursor = field(init=False)
 
     def __await__(self) -> Any:
         return self.down.__await__()
 
     async def __aiter__(self) -> Any:
-        actuallyiter = await self
-        async for each in actuallyiter:
-            yield each
+        try:
+            actuallyiter = await self
+            async for each in actuallyiter:
+                yield each
+        finally:
+            await self.cursor.close()
 
 
 @dataclass
@@ -158,7 +164,7 @@ class QueryMetadata:
         raising L{ParamMismatch} if the expected parameters do not match.
         """
         sig = signature(protocolMethod)
-        precomputedSQL: Dict[str, Tuple[str, QmarkParamstyleMap]] = {}
+        precomputedSQL: Dict[str, Tuple[str, NameMapMapping]] = {}
         for style, mapFactory in styles.items():
             mapInstance = mapFactory()
             styledSQL = self.sql.format_map(mapInstance)
@@ -179,7 +185,14 @@ class QueryMetadata:
             """
             Implementation of all database-proxy methods on objects returned
             from C{accessor}.
+
+            @note: This should really be two separate methods.  From
+                annotations we should know whether to use the aiterable path or
+                the awaitable path, we should not need to do the runtime check
+                every time.
             """
+
+            maybeai: MaybeAIterable
 
             async def body() -> Any:
                 conn = proxySelf.__query_connection__
@@ -188,13 +201,21 @@ class QueryMetadata:
                 bound = sig.bind(None, *args, **kw)
                 await cur.execute(styledSQL, styledMap.queryArguments(bound))
                 maybeAgen: Any = self.load(proxySelf, cur)
-                try:
-                    # there is probably a nicer way to detect aiter-ability
-                    return await maybeAgen
-                except TypeError:
+                if isawaitable(maybeAgen):
+                    # if it's awaitable, then it's not an aiterable.
+                    result = await maybeAgen
+                    await cur.close()
+                    return result
+                else:
+                    # if it's aiterable, we should be iterating it, not
+                    # awaiting it.  MaybeAIterable takes care of the implicit
+                    # await of _this_ coroutine.
+                    nonlocal maybeai
+                    maybeai.cursor = cur
                     return maybeAgen
 
-            return MaybeAIterable(body())
+            maybeai = MaybeAIterable(body())
+            return maybeai
 
         self.proxyMethod = proxyMethod
         setattr(protocolMethod, METADATA_KEY, self)
@@ -269,12 +290,13 @@ class DBProxy:
 
 
 @dataclass
-class QmarkParamstyleMap:
+class IndexCountingParamstyleMap:
+    placeholder: str
     names: List[str] = field(default_factory=list)
 
     def __getitem__(self, name: str) -> str:
         self.names.append(name)
-        return "?"
+        return self.placeholder
 
     def queryArguments(self, bound: BoundArguments) -> Sequence[object]:
         """
@@ -292,8 +314,20 @@ class _EmptyProtocol(Protocol):
 
 PROTOCOL_IGNORED_ATTRIBUTES = set(_EmptyProtocol.__dict__.keys())
 
-styles = {
-    "qmark": QmarkParamstyleMap,
+
+class NameMapMapping(Protocol):
+    names: List[str]
+
+    def __getitem__(self, __key: str) -> Any:
+        ...
+
+    def queryArguments(self, bound: BoundArguments) -> Sequence[object]:
+        ...
+
+
+styles: dict[str, Callable[[], NameMapMapping]] = {
+    "qmark": lambda: IndexCountingParamstyleMap("?"),
+    "pyformat": lambda: IndexCountingParamstyleMap("%s"),
 }
 
 

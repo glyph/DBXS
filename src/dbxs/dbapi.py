@@ -1,3 +1,8 @@
+"""
+This module is a description of the abstract types described by U{PEP 249
+Database API 2.0 <https://www.python.org/dev/peps/pep-0249/>}.
+"""
+
 from __future__ import annotations
 
 from typing import Any, Mapping, Optional, Sequence, Tuple, Union
@@ -5,20 +10,17 @@ from typing import Any, Mapping, Optional, Sequence, Tuple, Union
 from ._typing_compat import Protocol
 
 
-# PEP 249 Database API 2.0 Types
-# https://www.python.org/dev/peps/pep-0249/
-
-
 DBAPITypeCode = Optional[Any]
 
+
 DBAPIColumnDescription = Tuple[
-    str,
-    DBAPITypeCode,
-    Optional[int],
-    Optional[int],
-    Optional[int],
-    Optional[int],
-    Optional[bool],
+    str,  # name
+    DBAPITypeCode,  # type_code
+    Optional[int],  # display_size
+    Optional[int],  # internal_size
+    Optional[int],  # precision
+    Optional[int],  # scale
+    Union[None, bool, int],  # null_ok
 ]
 
 
@@ -57,16 +59,16 @@ class DBAPICursor(Protocol):
     ) -> object:
         ...
 
-    def executemany(
-        self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
-    ) -> object:
-        ...
+    # def executemany(
+    #     self, __operation: str, __seq_of_parameters: Sequence[Sequence[Any]]
+    # ) -> object:
+    #     ...
 
     def fetchone(self) -> Optional[Sequence[Any]]:
         ...
 
-    def fetchmany(self, __size: int = ...) -> Sequence[Sequence[Any]]:
-        ...
+    # def fetchmany(self, __size: int = ...) -> Sequence[Sequence[Any]]:
+    #     ...
 
     def fetchall(self) -> Sequence[Sequence[Any]]:
         ...
