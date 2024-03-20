@@ -38,9 +38,14 @@ else:
 
 
 async def configuredConnectAsync() -> MySQLConnectionAbstract:
-    return await connectAsync(
+    connected = await connectAsync(
         user=environ["MYSQL_USER"], password=environ["MYSQL_PWD"]
     )
+    cur = await connected.cursor()
+    await cur.execute("create database if not exists dbxs_test_suite")
+    await cur.execute("use dbxs_test_suite")
+    await cur.close()
+    return connected
 
 
 @dataclass

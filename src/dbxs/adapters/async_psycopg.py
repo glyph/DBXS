@@ -39,13 +39,13 @@ class _PG2DBXSCursor:
     async def fetchone(self) -> Optional[Sequence[Any]]:
         return await self._pgcur.fetchone()
 
-    async def fetchmany(
-        self, size: Optional[int] = None
-    ) -> Sequence[Sequence[Any]]:
-        if size is not None:
-            return await self._pgcur.fetchmany(size)
-        else:
-            return await self._pgcur.fetchmany()
+    # async def fetchmany(
+    #     self, size: Optional[int] = None
+    # ) -> Sequence[Sequence[Any]]:
+    #     if size is not None:
+    #         return await self._pgcur.fetchmany(size)
+    #     else:
+    #         return await self._pgcur.fetchmany()
 
     async def fetchall(self) -> Sequence[Sequence[Any]]:
         return await self._pgcur.fetchall()

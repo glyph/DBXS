@@ -139,11 +139,11 @@ class FakeDBAPICursor:
         )
         return None
 
-    def fetchmany(self, __size: int = 0) -> Sequence[Sequence[Any]]:
-        self.operationsByThread.append(
-            ("fetchmany", self.connectionID, pretendThreadID)
-        )
-        return []
+    # def fetchmany(self, __size: int = 0) -> Sequence[Sequence[Any]]:
+    #     self.operationsByThread.append(
+    #         ("fetchmany", self.connectionID, pretendThreadID)
+    #     )
+    #     return []
 
     def fetchall(self) -> Sequence[Sequence[Any]]:
         self.operationsByThread.append(
@@ -328,7 +328,7 @@ class ResourceManagementTests(SyncTestCase):
             #     "lots of operations", [["parameter", "seq"], ["etc", "etc"]]
             # )
             self.assertIs(await cur.fetchone(), None)
-            self.assertEqual(await cur.fetchmany(7), [])
+            # self.assertEqual(await cur.fetchmany(7), [])
             self.assertEqual(await cur.fetchall(), [])
             await cur.close()
             await con.commit()
@@ -348,7 +348,7 @@ class ResourceManagementTests(SyncTestCase):
                 "execute",
                 # "executemany",
                 "fetchone",
-                "fetchmany",
+                # "fetchmany",
                 "fetchall",
                 "close",
                 "close",
@@ -598,11 +598,12 @@ class SyncAdapterTests(AsyncTestCase):
             insert into sample values (3, 'more'), (4, 'even more')
             """
         )
-        await cur.execute(query)
-        self.assertEqual(
-            await cur.fetchmany(3), [(1, "hello"), (2, "goodbye"), (3, "more")]
-        )
-        self.assertEqual(await cur.fetchmany(3), [(4, "even more")])
+        # await cur.execute(query)
+        # self.assertEqual(
+        #     await cur.fetchmany(3),
+        #     [(1, "hello"), (2, "goodbye"), (3, "more")],
+        # )
+        # self.assertEqual(await cur.fetchmany(3), [(4, "even more")])
 
     @eagerDeferredCoroutine
     async def test_errors(self) -> None:

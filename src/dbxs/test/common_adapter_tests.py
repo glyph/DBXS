@@ -48,7 +48,8 @@ class CommonTests(TestCase, metaclass=CommonMeta):
 
     def test_transaction(self) -> None:
         async def _() -> None:
-            async with transaction(self.createConnectable()) as t:
+            cc = self.createConnectable()
+            async with transaction(cc) as t:
                 cur = await t.cursor()
                 await cur.execute(self.valuesSQL())
                 desc = await cur.description()
@@ -61,6 +62,28 @@ class CommonTests(TestCase, metaclass=CommonMeta):
                 self.assertEqual(cname2, "secondcol")
                 self.assertEqual(self.numberType(), typecode)
                 self.assertEqual(self.stringType(), typecode2)
-                self.assertEqual((await cur.fetchmany(1)), [(1, "2")])
+                self.assertEqual((await cur.fetchall()), [(1, "2")])
+                await cur.execute("create temporary table foo (bar int)")
+                await cur.execute("insert into foo values (1)")
+                self.assertEqual(await cur.rowcount(), 1)
+                self.assertIsNone(await cur.description())
+
+            with self.assertRaises(ZeroDivisionError):
+                async with transaction(cc) as t:
+                    cur = await t.cursor()
+                    await cur.execute("insert into foo values(2)")
+                    1 / 0
+
+            async with transaction(cc) as t:
+                cur = await t.cursor()
+                await cur.execute("insert into foo values(3)")
+
+            async with transaction(cc) as t:
+                cur = await t.cursor()
+                await cur.execute("select * from foo order by bar asc")
+                rows = await cur.fetchall()
+                self.assertEqual(rows, [tuple([1]), tuple([3])])
+
+            await cc.quit()
 
         get_event_loop().run_until_complete(_())

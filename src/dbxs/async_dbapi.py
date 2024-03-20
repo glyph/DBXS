@@ -46,10 +46,10 @@ class AsyncCursor(Protocol):
     async def fetchone(self) -> Optional[Sequence[Any]]:
         ...
 
-    async def fetchmany(
-        self, size: Optional[int] = None
-    ) -> Sequence[Sequence[Any]]:
-        ...
+    # async def fetchmany(
+    #     self, size: Optional[int] = None
+    # ) -> Sequence[Sequence[Any]]:
+    #     ...
 
     async def fetchall(self) -> Sequence[Sequence[Any]]:
         ...

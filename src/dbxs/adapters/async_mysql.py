@@ -38,13 +38,13 @@ class _MYSQL2DBXSCursor:
     async def fetchone(self) -> Optional[Sequence[Any]]:
         return await self._mysqlcur.fetchone()
 
-    async def fetchmany(
-        self, size: Optional[int] = None
-    ) -> Sequence[Sequence[Any]]:
-        if size is not None:
-            return await self._mysqlcur.fetchmany(size)
-        else:
-            return await self._mysqlcur.fetchmany()
+    # async def fetchmany(
+    #     self, size: Optional[int] = None
+    # ) -> Sequence[Sequence[Any]]:
+    #     if size is not None:
+    #         return await self._mysqlcur.fetchmany(size)
+    #     else:
+    #         return await self._mysqlcur.fetchmany()
 
     async def fetchall(self) -> Sequence[Sequence[Any]]:
         return await self._mysqlcur.fetchall()

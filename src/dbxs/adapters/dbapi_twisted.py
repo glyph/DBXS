@@ -132,14 +132,14 @@ class ThreadedCursorAdapter(AsyncCursor):
         )
         return result
 
-    async def fetchmany(
-        self, size: Optional[int] = None
-    ) -> Sequence[Sequence[Any]]:
-        a = [size] if size is not None else []
-        result: Sequence[Sequence[Any]] = await self._exclusive.perform(
-            lambda: self._cursor.fetchmany(*a)
-        )
-        return result
+    # async def fetchmany(
+    #     self, size: Optional[int] = None
+    # ) -> Sequence[Sequence[Any]]:
+    #     a = [size] if size is not None else []
+    #     result: Sequence[Sequence[Any]] = await self._exclusive.perform(
+    #         lambda: self._cursor.fetchmany(*a)
+    #     )
+    #     return result
 
     async def fetchall(self) -> Sequence[Sequence[Any]]:
         result: Sequence[Sequence[Any]] = await self._exclusive.perform(
