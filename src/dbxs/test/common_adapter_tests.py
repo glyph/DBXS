@@ -1,4 +1,5 @@
 # -*- test-case-name: dbxs.test.test_pg,dbxs.test.test_mysql-*-
+from __future__ import annotations
 
 from abc import abstractmethod
 from asyncio.events import get_event_loop
