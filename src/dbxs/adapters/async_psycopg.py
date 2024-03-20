@@ -31,7 +31,7 @@ class _PG2DBXSCursor:
         subdesc = self._pgcur.description
         if subdesc is None:
             return None
-        return [tuple(each) for each in subdesc]
+        return [tuple(each) for each in subdesc]  # pragma: no branch
 
     async def rowcount(self) -> int:
         return self._pgcur.rowcount

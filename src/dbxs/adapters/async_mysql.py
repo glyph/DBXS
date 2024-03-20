@@ -30,7 +30,7 @@ class _MYSQL2DBXSCursor:
         real = self._mysqlcur.description
         if real is None:
             return None
-        return [desc[:7] for desc in real]
+        return [desc[:7] for desc in real]  # pragma: no branch
 
     async def rowcount(self) -> int:
         return self._mysqlcur.rowcount
