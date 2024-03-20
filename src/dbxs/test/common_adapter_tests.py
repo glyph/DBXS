@@ -20,7 +20,7 @@ class CommonMeta(type):
         bases = (
             ()
             if bases == tuple([TestCase])
-            else tuple([TestCase, CommonTests])
+            else tuple([CommonTests, TestCase])
         )
         return super().__new__(
             cls,

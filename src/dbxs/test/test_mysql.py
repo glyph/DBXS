@@ -4,6 +4,7 @@ from asyncio import get_event_loop
 from dataclasses import dataclass
 from os import environ
 from typing import AsyncIterable
+from unittest import skipIf
 
 from twisted.trial.unittest import SynchronousTestCase as TestCase
 
@@ -116,10 +117,8 @@ class AccessTestCase(TestCase):
         get_event_loop().run_until_complete(_())
 
 
+@skipIf(cantFindMySQL, cantFindMySQL)
 class MySQLTests(CommonTests):
-    if cantFindMySQL:
-        skip = cantFindMySQL
-
     def createConnectable(self) -> AsyncConnectable:
         return adaptMySQL(configuredConnectAsync)
 
