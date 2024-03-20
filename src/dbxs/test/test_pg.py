@@ -31,7 +31,7 @@ else:
                 cur.execute("select true")
                 if cur.fetchall() == [tuple([True])]:
                     cantFindPG = ""
-    except Exception as e:  # pragma: nocov
+    except Exception as e:  # pragma: no cover
         cantFindPG = f"could not connect: {e} ({environ.get('PGPORT')})"
 
 
