@@ -32,8 +32,8 @@ else:
         ) as con:
             with con.cursor() as cur:
                 cur.execute("select true")
-                if cur.fetchall() == [tuple([True])]:
-                    cantFindMySQL = ""
+                assert cur.fetchall() == [tuple([True])]
+                cantFindMySQL = ""
     except Exception as e:  # pragma: no cover
         cantFindMySQL = f"could not connect: {e} ({environ.get('MYSQL_USER')})"
 

@@ -29,8 +29,8 @@ else:
         with connect() as con:
             with con.cursor() as cur:
                 cur.execute("select true")
-                if cur.fetchall() == [tuple([True])]:
-                    cantFindPG = ""
+                assert cur.fetchall() == [tuple([True])]
+                cantFindPG = ""
     except Exception as e:  # pragma: no cover
         cantFindPG = f"could not connect: {e} ({environ.get('PGPORT')})"
 
