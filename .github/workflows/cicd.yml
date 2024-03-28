@@ -328,14 +328,14 @@ jobs:
         if: ${{ matrix.tox-prefix == 'coverage' }}
 
       - name: Upload Coverage XML
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-debug
           path: coverage.xml
 
       - name: Upload Trial log artifact
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: trial
           path: .tox/${TOX_ENV}/log/trial.log
