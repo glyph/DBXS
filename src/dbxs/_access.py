@@ -234,7 +234,7 @@ METADATA_KEY = "__query_metadata__"
 @dataclass
 class MaybeAIterable:
     down: Any
-    cursor: AsyncCursor | None = None
+    cursor: AsyncCursor = field(init=False)
 
     def __await__(self) -> Any:
         return self.down.__await__()
@@ -245,8 +245,7 @@ class MaybeAIterable:
             async for each in actuallyiter:
                 yield each
         finally:
-            if self.cursor is not None:
-                await self.cursor.close()
+            await self.cursor.close()
 
 
 @dataclass
