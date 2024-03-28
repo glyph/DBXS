@@ -2,7 +2,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from inspect import BoundArguments, isawaitable, signature
+from inspect import (
+    BoundArguments,
+    currentframe,
+    getsourcefile,
+    getsourcelines,
+    isawaitable,
+    signature,
+)
+from types import FrameType, TracebackType
 from typing import (
     Any,
     AsyncIterable,
@@ -12,6 +20,7 @@ from typing import (
     Dict,
     Iterable,
     List,
+    NoReturn,
     Optional,
     Sequence,
     Tuple,
@@ -61,22 +70,111 @@ class ExtraneousMethods(Exception):
     """
 
 
+class WrongRowShape(TypeError):
+    """
+    The row was the wrong shape for the given callable.
+    """
+
+
+@dataclass
+class _ExceptionFixer:
+    loader: Callable[..., object]
+    definitionLine: int
+    decorationLine: int
+    decorationFrame: FrameType
+    definitionFrame: FrameType
+
+    def reraise(self, row: object, e: Exception) -> NoReturn:
+        withDecorationAdded = TracebackType(
+            None, self.decorationFrame, 0, self.decorationLine
+        )
+        withDefinitionAdded = TracebackType(
+            withDecorationAdded, self.definitionFrame, 0, self.definitionLine
+        )
+        raise WrongRowShape(
+            f"loader {self.loader.__module__}.{self.loader.__name__}"
+            f" could not handle {row}"
+        ).with_traceback(withDefinitionAdded) from e
+
+    @classmethod
+    def create(cls, loader: Callable[..., T]) -> _ExceptionFixer:
+        subFrame = currentframe()
+        assert subFrame is not None
+        frameworkFrame = subFrame.f_back  # the caller; 'one' or 'many'
+        assert frameworkFrame is not None
+        realDecorationFrame = frameworkFrame.f_back
+        assert realDecorationFrame is not None
+        ignored, definitionLine = getsourcelines(loader)
+
+        def decoratedHere() -> FrameType | None:
+            return currentframe()
+
+        decoratedHere.__code__ = decoratedHere.__code__.replace(
+            co_name="<<decorated here>>",
+            co_filename=realDecorationFrame.f_code.co_filename,
+            co_firstlineno=realDecorationFrame.f_lineno,
+        )
+
+        def definedHere() -> FrameType | None:
+            return currentframe()
+
+        definedSourceFile = getsourcefile(loader)
+        definedHere.__code__ = definedHere.__code__.replace(
+            co_name="<<defined here>>",
+            co_filename=definedSourceFile or "unknown definition",
+            co_firstlineno=definitionLine,
+        )
+
+        fakeDecorationFrame = decoratedHere()
+        definitionFrame = definedHere()
+        assert realDecorationFrame is not None
+        assert definitionFrame is not None
+        assert fakeDecorationFrame is not None
+
+        return cls(
+            loader=loader,
+            definitionFrame=definitionFrame,
+            definitionLine=definitionLine,
+            decorationFrame=fakeDecorationFrame,
+            decorationLine=realDecorationFrame.f_lineno,
+        )
+
+
+_NR = TypeVar("_NR")
+
+
+def _makeTranslator(
+    fixer: _ExceptionFixer,
+    load: Callable[..., T],
+    noResults: Callable[[], _NR],
+) -> Callable[[object, AsyncCursor], Coroutine[object, object, T | _NR]]:
+    async def translator(db: object, cursor: AsyncCursor) -> T | _NR:
+        rows = await cursor.fetchall()
+        if len(rows) < 1:
+            return noResults()
+        if len(rows) > 1:
+            raise TooManyResults()
+        [row] = rows
+        try:
+            return load(db, *row)
+        except TypeError as e:
+            fixer.reraise(row, e)
+
+    return translator
+
+
 def one(
     load: Callable[..., T],
 ) -> Callable[[object, AsyncCursor], Coroutine[object, object, T]]:
     """
     Fetch a single result with a translator function.
     """
+    fixer = _ExceptionFixer.create(load)
 
-    async def translateOne(db: object, cursor: AsyncCursor) -> T:
-        rows = await cursor.fetchall()
-        if len(rows) < 1:
-            raise NotEnoughResults()
-        if len(rows) > 1:
-            raise TooManyResults()
-        return load(db, *rows[0])
+    def noResults() -> NoReturn:
+        raise NotEnoughResults()
 
-    return translateOne
+    return _makeTranslator(fixer, load, noResults)
 
 
 def maybe(
@@ -86,16 +184,12 @@ def maybe(
     Fetch a single result and pass it to a translator function, but return None
     if it's not found.
     """
+    fixer = _ExceptionFixer.create(load)
 
-    async def translateMaybe(db: object, cursor: AsyncCursor) -> Optional[T]:
-        rows = await cursor.fetchall()
-        if len(rows) < 1:
-            return None
-        if len(rows) > 1:
-            raise TooManyResults()
-        return load(db, *rows[0])
+    def noResults() -> None:
+        return None
 
-    return translateMaybe
+    return _makeTranslator(fixer, load, noResults)
 
 
 def many(
@@ -104,6 +198,7 @@ def many(
     """
     Fetch multiple results with a function to translate rows.
     """
+    fixer = _ExceptionFixer.create(load)
 
     async def translateMany(
         db: object, cursor: AsyncCursor
@@ -112,7 +207,10 @@ def many(
             row = await cursor.fetchone()
             if row is None:
                 return
-            yield load(db, *row)
+            try:
+                yield load(db, *row)
+            except TypeError as e:
+                fixer.reraise(row, e)
 
     return translateMany
 
@@ -133,7 +231,7 @@ METADATA_KEY = "__query_metadata__"
 @dataclass
 class MaybeAIterable:
     down: Any
-    cursor: AsyncCursor = field(init=False)
+    cursor: AsyncCursor | None = None
 
     def __await__(self) -> Any:
         return self.down.__await__()
@@ -144,7 +242,8 @@ class MaybeAIterable:
             async for each in actuallyiter:
                 yield each
         finally:
-            await self.cursor.close()
+            if self.cursor is not None:
+                await self.cursor.close()
 
 
 @dataclass

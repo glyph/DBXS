@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import traceback
 from dataclasses import dataclass
-from typing import Optional
+from typing import AsyncIterable, Optional
 from unittest import TestCase
 
 from .. import (
@@ -10,6 +11,7 @@ from .. import (
     ParamMismatch,
     TooManyResults,
     accessor,
+    many,
     maybe,
     one,
     query,
@@ -30,9 +32,33 @@ class Foo:
     baz: int
 
 
+def oops(  # point at this definition(one)
+    db: FooAccessPattern,
+    bar: int,
+    baz: int,
+    extra: str,
+) -> str:
+    return extra
+
+
+@dataclass  # point at this definition(many)
+class Oops2:
+    db: FooAccessPattern
+    bar: int
+    baz: int
+    extra: str
+
+
 class FooAccessPattern(Protocol):
     @query(sql="select bar, baz from foo where bar = {bar}", load=one(Foo))
     async def getFoo(self, bar: int) -> Foo:
+        ...
+
+    @query(
+        sql="select bar, baz from foo order by bar asc",
+        load=many(Foo),
+    )
+    def allFoos(self) -> AsyncIterable[Foo]:
         ...
 
     @query(sql="select bar, baz from foo where bar = {bar}", load=maybe(Foo))
@@ -41,6 +67,20 @@ class FooAccessPattern(Protocol):
 
     @query(sql="select bar, baz from foo where baz = {baz}", load=one(Foo))
     async def oneFooByBaz(self, baz: int) -> Foo:
+        ...
+
+    @query(
+        sql="select bar, baz from foo where baz = {baz}",
+        load=one(oops),  # point at this decoration(one)
+    )
+    async def wrongArityOne(self, baz: int) -> str:
+        ...
+
+    @query(
+        sql="select bar, baz from foo",
+        load=many(Oops2),  # point at this decoration(many)
+    )
+    def wrongArityMany(self) -> AsyncIterable[Oops2]:
         ...
 
     @query(sql="select bar, baz from foo where baz = {baz}", load=maybe(Foo))
@@ -102,8 +142,36 @@ class AccessTestCase(TestCase):
             db = accessFoo(c)
             result = await db.getFoo(1)
             result2 = await db.maybeFoo(1)
+            result3 = [each async for each in db.allFoos()]
         self.assertEqual(result, Foo(db, 1, 3))
         self.assertEqual(result, result2)
+        self.assertEqual(result3, [Foo(db, 1, 3), Foo(db, 2, 4)])
+
+    @immediateTest()
+    async def test_wrongResultArity(self, pool: MemoryPool) -> None:
+        """
+        If the signature of the callable provided to C{query(load=one(...))} or
+        C{query(load=many(...))} does not match with the number of arguments
+        returned by the database for a row in a particular query, the error
+        will explain well enough to debug.
+        """
+        async with transaction(pool.connectable) as c:
+            await schemaAndData(c)
+            db = accessFoo(c)
+            try:
+                await db.wrongArityOne(3)
+            except TypeError:
+                tbf1 = traceback.format_exc()
+            try:
+                [each async for each in db.wrongArityMany()]
+            except TypeError:
+                tbf2 = traceback.format_exc()
+            # print(tbf1)
+            # print(tbf2)
+            self.assertIn("point at this definition(one)", tbf1)
+            self.assertIn("point at this decoration(one)", tbf1)
+            self.assertIn("point at this definition(many)", tbf2)
+            self.assertIn("point at this decoration(many)", tbf2)
 
     def test_argumentExhaustiveness(self) -> None:
         """
