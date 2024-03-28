@@ -106,17 +106,20 @@ class _ExceptionFixer:
         assert realDecorationFrame is not None
         wholeSource, definitionLine = getsourcelines(loader)
 
+        # coverage is tricked by the __code__ modifications below, so we have
+        # to explicitly ignore the gap
+
         def decoratedHere() -> FrameType | None:
-            return currentframe()
+            return currentframe()  # pragma: no cover
+
+        def definedHere() -> FrameType | None:
+            return currentframe()  # pragma: no cover
 
         decoratedHere.__code__ = decoratedHere.__code__.replace(
             co_name="<<decorated here>>",
             co_filename=realDecorationFrame.f_code.co_filename,
             co_firstlineno=realDecorationFrame.f_lineno,
         )
-
-        def definedHere() -> FrameType | None:
-            return currentframe()
 
         definedSourceFile = getsourcefile(loader)
         definedHere.__code__ = definedHere.__code__.replace(
