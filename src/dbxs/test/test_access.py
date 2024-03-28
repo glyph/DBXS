@@ -41,8 +41,12 @@ def oops(  # point at this definition(one)
     return extra
 
 
+# duplicate definition comment on different lines below because
+# inspect.getsourcelines changed behavior from 3.8 to 3.9
+
+
 @dataclass  # point at this definition(many)
-class Oops2:
+class Oops2:  # point at this definition(many)
     db: FooAccessPattern
     bar: int
     baz: int

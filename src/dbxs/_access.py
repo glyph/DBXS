@@ -104,7 +104,7 @@ class _ExceptionFixer:
         assert frameworkFrame is not None
         realDecorationFrame = frameworkFrame.f_back
         assert realDecorationFrame is not None
-        ignored, definitionLine = getsourcelines(loader)
+        wholeSource, definitionLine = getsourcelines(loader)
 
         def decoratedHere() -> FrameType | None:
             return currentframe()
