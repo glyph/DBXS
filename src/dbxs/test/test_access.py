@@ -146,9 +146,9 @@ class AccessTestCase(TestCase):
             db = accessFoo(c)
             result = await db.getFoo(1)
             result2 = await db.maybeFoo(1)
-            result3 = [
+            result3 = [  # pragma: no branch
                 each async for each in db.allFoos()
-            ]  # pragma: no branch
+            ]
         self.assertEqual(result, Foo(db, 1, 3))
         self.assertEqual(result, result2)
         self.assertEqual(result3, [Foo(db, 1, 3), Foo(db, 2, 4)])
@@ -169,9 +169,9 @@ class AccessTestCase(TestCase):
             except TypeError:
                 tbf1 = traceback.format_exc()
             try:
-                [
+                [  # pragma: no branch
                     each async for each in db.wrongArityMany()
-                ]  # pragma: no branch
+                ]
             except TypeError:
                 tbf2 = traceback.format_exc()
             # print(tbf1)
