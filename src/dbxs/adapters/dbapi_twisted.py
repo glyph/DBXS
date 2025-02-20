@@ -37,7 +37,7 @@ F = Callable[[], None]
 
 
 def _newThread() -> IExclusiveWorker:
-    def _startThread(target: Callable[[], None]) -> Thread:
+    def _startThread(target: Callable[[], object]) -> object:
         thread = Thread(target=target, daemon=True)
         thread.start()
         return thread
