@@ -242,14 +242,14 @@ jobs:
             twisted-version: "23.10"
             tox-prefix: "coverage"
             tox-suffix: "-postgres"
-            pg-image: "postgres:16"
+            pg-image: "postgres:17"
             optional: false
           - os: "ubuntu-latest"
             python-version: "3.12"
             twisted-version: "23.10"
             tox-prefix: "coverage"
             tox-suffix: "-mysql"
-            mysql-image: "mysql:8.0.29"
+            mysql-image: "mysql:9"
             optional: false
 
     steps:
