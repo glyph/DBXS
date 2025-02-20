@@ -18,6 +18,7 @@ from typing import (
     Callable,
     Coroutine,
     Dict,
+    Generic,
     Iterable,
     List,
     NoReturn,
@@ -249,7 +250,7 @@ class MaybeAIterable:
 
 
 @dataclass
-class QueryMetadata:
+class QueryMetadata(Generic[A]):
     """
     Metadata defining a certain function on a protocol as a query method.
     """
@@ -354,7 +355,7 @@ class QueryMetadata:
 def query(
     *,
     sql: str,
-    load: Callable[[object, AsyncCursor], A],
+    load: Callable[[AccessProxy, AsyncCursor], A],
 ) -> Callable[[Callable[P, A]], Callable[P, A]]:
     """
     Declare a query method.

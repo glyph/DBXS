@@ -28,7 +28,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
@@ -62,7 +62,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
@@ -96,7 +96,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
@@ -130,7 +130,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
@@ -163,7 +163,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
@@ -225,7 +225,7 @@ jobs:
     strategy:
       matrix:
         os: ["ubuntu-latest"]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.13", "3.12"]
         twisted-version: ["21.2", "22.1", "23.10"]
         tox-prefix: ["coverage"]
         tox-suffix: [""]
@@ -233,14 +233,7 @@ jobs:
         pg-image: [""]
         include:
           - os: "ubuntu-latest"
-            python-version: "pypy-3.8"
-            twisted-version: "current"
-            # We need at least one PyPy environment with coverage enabled, but
-            # it's quite slow so we'll disable it everywhere else.
-            tox-prefix: "test"
-            optional: false
-          - os: "ubuntu-latest"
-            python-version: "pypy-3.9"
+            python-version: "pypy-3.10"
             twisted-version: "current"
             tox-prefix: "coverage"
             optional: false
@@ -249,14 +242,14 @@ jobs:
             twisted-version: "23.10"
             tox-prefix: "coverage"
             tox-suffix: "-postgres"
-            pg-image: "postgres:16"
+            pg-image: "postgres:17"
             optional: false
           - os: "ubuntu-latest"
             python-version: "3.12"
             twisted-version: "23.10"
             tox-prefix: "coverage"
             tox-suffix: "-mysql"
-            mysql-image: "mysql:8.0.29"
+            mysql-image: "mysql:9"
             optional: false
 
     steps:
@@ -271,7 +264,7 @@ jobs:
         with:
           python-version: |
             ${{ matrix.python-version }}
-            3.11
+            3.13
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
@@ -327,24 +320,18 @@ jobs:
         run: tox run -e coverage_combine,coverage_report
         if: ${{ matrix.tox-prefix == 'coverage' }}
 
-      - name: Upload Coverage XML
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-debug
-          path: coverage.xml
-
       - name: Upload Trial log artifact
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: trial
+          name: trial-log-${{ matrix.tox-prefix }}-${{ matrix.python-version }}-${{ matrix.twisted-version }}-${{ matrix.tox-suffix }}
           path: .tox/${TOX_ENV}/log/trial.log
 
       # Use the latest supported Python version for combining coverage to
       # prevent parsing errors in older versions when looking at modern code.
       - uses: "actions/setup-python@v5"
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: "Upload coverage to Codecov"
         uses: "codecov/codecov-action@v3"
