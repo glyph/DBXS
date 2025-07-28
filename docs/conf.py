@@ -24,3 +24,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_theme = "alabaster"
 html_static_path = []
+
+# sqlalchemy.org is just entirely down right now, let's ignore it until it
+# comes back
+linkcheck_ignore = [r"https://docs.sqlalchemy.org/.*"]
