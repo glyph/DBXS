@@ -25,6 +25,8 @@ def sqlite3Connector() -> Callable[[], DBAPIConnection]:
     """
     uri = f"file:{str(uuid4())}?mode=memory&cache=shared"
 
+    held: list[DBAPIConnection] = []
+
     def connect() -> DBAPIConnection:
         # This callable has to hang on to a connection to the underlying SQLite
         # data structures, otherwise its schema and shared cache disappear as
@@ -32,7 +34,7 @@ def sqlite3Connector() -> Callable[[], DBAPIConnection]:
         held
         return sqlite3.connect(uri, uri=True)
 
-    held = connect()
+    held.append(connect())
     return connect
 
 
