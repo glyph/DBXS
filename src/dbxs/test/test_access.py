@@ -3,7 +3,7 @@ from __future__ import annotations
 import traceback
 from dataclasses import dataclass
 from typing import AsyncIterable, Optional
-from unittest import TestCase
+from unittest import TestCase, skipIf
 
 from .. import (
     ExtraneousMethods,
@@ -221,6 +221,7 @@ class AccessTestCase(TestCase):
         self.assertEqual(result, result2)
         self.assertEqual(result3, [Foo(db, 1, 3), Foo(db, 2, 4)])
 
+    @skipIf(not alchemized, "SQLAlchemy not installed")
     @immediateTest()
     async def test_happyPathAlchemized(self, pool: MemoryPool) -> None:
         """
@@ -303,6 +304,7 @@ class AccessTestCase(TestCase):
                 async def someMissing(self, bar: str) -> None:
                     ...
 
+    @skipIf(not alchemized, "SQLAlchemy not installed")
     def test_argumentExhaustivenessAlchemized(self) -> None:
         """
         L{test_argumentExhaustiveness} but with SQLAlchemy bindparams rather
