@@ -23,6 +23,15 @@ from ..async_dbapi import AsyncConnection, transaction
 from ..testing import MemoryPool, immediateTest
 
 
+try:
+    from sqlalchemy.sql.expression import bindparam
+    from sqlalchemy.sql.schema import Column, MetaData, Table
+    from sqlalchemy.sql.sqltypes import Integer
+
+    alchemized = True
+except ImportError:
+    alchemized = False
+
 # Trying to stick to the public API for what we're testing; no underscores here.
 
 
@@ -54,10 +63,29 @@ class Oops2:  # point at this definition(many)
     extra: str
 
 
+if alchemized:
+    alchemyMetadata = MetaData()
+    fooTable = Table(
+        "foo",
+        alchemyMetadata,
+        Column("bar", Integer, primary_key=True, autoincrement=True),
+        Column("baz", Integer),
+    )
+
+
 class FooAccessPattern(Protocol):
     @query(sql="select bar, baz from foo where bar = {bar}", load=one(Foo))
     async def getFoo(self, bar: int) -> Foo:
         ...
+
+    if alchemized:
+
+        @query(
+            sql=(fooTable.select().where(fooTable.c.bar == bindparam("bar"))),
+            load=one(Foo),
+        )
+        async def getFooAlchemized(self, bar: int) -> Foo:
+            ...
 
     @query(
         sql="select bar, baz from foo order by bar asc",
@@ -66,9 +94,27 @@ class FooAccessPattern(Protocol):
     def allFoos(self) -> AsyncIterable[Foo]:
         ...
 
+    if alchemized:
+
+        @query(
+            sql=(fooTable.select()),
+            load=many(Foo),
+        )
+        def allFoosAlchemized(self) -> AsyncIterable[Foo]:
+            ...
+
     @query(sql="select bar, baz from foo where bar = {bar}", load=maybe(Foo))
     async def maybeFoo(self, bar: int) -> Optional[Foo]:
         ...
+
+    if alchemized:
+
+        @query(
+            sql=(fooTable.select().where(fooTable.c.bar == bindparam("bar"))),
+            load=maybe(Foo),
+        )
+        async def maybeFooAlchemized(self, bar: int) -> Foo | None:
+            ...
 
     @query(sql="select bar, baz from foo where baz = {baz}", load=one(Foo))
     async def oneFooByBaz(self, baz: int) -> Foo:
@@ -170,6 +216,24 @@ class AccessTestCase(TestCase):
             result2 = await db.maybeFoo(1)
             result3 = [  # pragma: no branch
                 each async for each in db.allFoos()
+            ]
+        self.assertEqual(result, Foo(db, 1, 3))
+        self.assertEqual(result, result2)
+        self.assertEqual(result3, [Foo(db, 1, 3), Foo(db, 2, 4)])
+
+    @immediateTest()
+    async def test_happyPathAlchemized(self, pool: MemoryPool) -> None:
+        """
+        Test the same functionality as test_happyPath but with SQLAlchemy
+        queries.
+        """
+        async with transaction(pool.connectable) as c:
+            await schemaAndData(c)
+            db = accessFoo(c)
+            result = await db.getFooAlchemized(1)
+            result2 = await db.maybeFooAlchemized(1)
+            result3 = [  # pragma: no branch
+                each async for each in db.allFoosAlchemized()
             ]
         self.assertEqual(result, Foo(db, 1, 3))
         self.assertEqual(result, result2)

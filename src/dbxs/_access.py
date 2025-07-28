@@ -267,7 +267,10 @@ class MaybeAIterable:
 @dataclass
 class SQLAlchemyMapping:
     compiled: SQLCompiler
-    names: List[str] = field(default_factory=list)
+
+    @property
+    def names(self) -> list[str]:
+        return list(self.compiled.bind_names.values())
 
     def __getitem__(self, __key: str) -> Any:
         ...
@@ -311,20 +314,19 @@ class QueryMetadata(Generic[A]):
             else:
                 # Right now all the precomputed SQL is generated at compile
                 # time.
+                strictStyle: StrictParamStyle = (
+                    style  # type:ignore[assignment]
+                )
                 compiled = self.sql.compile(
                     dialect=(
                         style
                         if isinstance(style, Dialect)
-                        else (
-                            DefaultDialect(style)
-                            if isinstance(style, StrictParamStyle)
-                            else None
-                        )
+                        else DefaultDialect(strictStyle)
                     )
                 )
-                self.compilationCache[style] = str(
-                    compiled
-                ), SQLAlchemyMapping(compiled)
+                self.compilationCache[style] = str(compiled), (
+                    mapInstance := SQLAlchemyMapping(compiled)
+                )
 
             selfExcluded = list(self.signature.parameters)[1:]
             if set(mapInstance.names) != set(selfExcluded):
@@ -500,7 +502,9 @@ PROTOCOL_IGNORED_ATTRIBUTES = set(_EmptyProtocol.__dict__.keys())
 
 
 class BinderMap(Protocol):
-    names: List[str]
+    @property
+    def names(self) -> Sequence[str]:
+        ...
 
     def __getitem__(self, __key: str) -> Any:
         ...

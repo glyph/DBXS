@@ -251,6 +251,12 @@ jobs:
             tox-suffix: "-mysql"
             mysql-image: "mysql:9"
             optional: false
+          - os: "ubuntu-latest"
+            python-version: "3.12"
+            twisted-version: "23.10"
+            tox-prefix: "coverage"
+            tox-suffix: "-sqlalchemy"
+            optional: false
 
     steps:
 
