@@ -3,7 +3,16 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
-from typing import Any, Callable, Coroutine, List, Literal, Sequence, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Coroutine,
+    List,
+    Literal,
+    Sequence,
+    TypeVar,
+)
 from unittest import TestCase
 from uuid import uuid4
 
@@ -16,6 +25,12 @@ from ._typing_compat import Protocol
 from .adapters.dbapi_twisted import adaptSynchronousDriver
 from .async_dbapi import AsyncConnectable
 from .dbapi import DBAPIConnection
+
+
+if TYPE_CHECKING:
+    SQLiteStyle = (
+        Literal["qmark"] | Literal["named"] | Literal["numeric_dollar"]
+    )
 
 
 def sqlite3Connector() -> Callable[[], DBAPIConnection]:
@@ -177,9 +192,6 @@ class ImmediateDeferred:
         deferred = Deferred.fromCoroutine(coroutine)
         deferred.addCallbacks(succeeded.append, failed.append)
         return DeferredCompletionTester(failer, succeeded, failed)
-
-
-SQLiteStyle = Literal["qmark"] | Literal["named"] | Literal["numeric_dollar"]
 
 
 def immediateTest(
