@@ -165,6 +165,15 @@ class FooAccessPattern(Protocol):
         Create a new C{Foo} and return it.
         """
 
+    @query(
+        sql="select {repeat}, {repeat}",
+        load=one(lambda db, first, second: (first, second)),
+    )
+    async def repeatedArgument(self, repeat: str) -> tuple[str, str]:
+        """
+        Ensure a repeated argument is the same.
+        """
+
 
 class OtherAccessPattern(Protocol):
     @query(sql="select {value} + 1", load=one(lambda db, x: x))
@@ -254,6 +263,13 @@ class AccessTestCase(TestCase):
             self.assertEqual(result, "7")
             result = await db.echoValue()
             self.assertEqual(result, "3")
+
+    @immediateTest(styles=["qmark", "named", "numeric_dollar"])
+    async def test_repeatParams(self, pool: MemoryPool) -> None:
+        async with transaction(pool.connectable) as c:
+            db = accessFoo(c)
+            values = await db.repeatedArgument("test-value")
+            self.assertEqual(values, ("test-value", "test-value"))
 
     @immediateTest()
     async def test_wrongResultArity(self, pool: MemoryPool) -> None:
