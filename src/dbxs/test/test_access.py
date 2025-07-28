@@ -240,7 +240,8 @@ class AccessTestCase(TestCase):
         self.assertEqual(result, result2)
         self.assertEqual(result3, [Foo(db, 1, 3), Foo(db, 2, 4)])
 
-    @immediateTest()
+    # game branch coverage a little bit by selecting a non-qmark style
+    @immediateTest(styles=["named"])
     async def test_defaultParamValue(self, pool: MemoryPool) -> None:
         """
         Default parameters specified by the access Protocol are incorporated
