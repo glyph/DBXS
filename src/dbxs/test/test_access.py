@@ -3,7 +3,7 @@ from __future__ import annotations
 import traceback
 from dataclasses import dataclass
 from typing import AsyncIterable, Optional
-from unittest import TestCase
+from unittest import TestCase, skipIf
 
 from .. import (
     ExtraneousMethods,
@@ -22,6 +22,15 @@ from .._typing_compat import Protocol
 from ..async_dbapi import AsyncConnection, transaction
 from ..testing import MemoryPool, immediateTest
 
+
+try:
+    from sqlalchemy.sql.expression import bindparam
+    from sqlalchemy.sql.schema import Column, MetaData, Table
+    from sqlalchemy.sql.sqltypes import Integer
+
+    alchemized = True
+except ImportError:
+    alchemized = False
 
 # Trying to stick to the public API for what we're testing; no underscores here.
 
@@ -54,10 +63,29 @@ class Oops2:  # point at this definition(many)
     extra: str
 
 
+if alchemized:
+    alchemyMetadata = MetaData()
+    fooTable = Table(
+        "foo",
+        alchemyMetadata,
+        Column("bar", Integer, primary_key=True, autoincrement=True),
+        Column("baz", Integer),
+    )
+
+
 class FooAccessPattern(Protocol):
     @query(sql="select bar, baz from foo where bar = {bar}", load=one(Foo))
     async def getFoo(self, bar: int) -> Foo:
         ...
+
+    if alchemized:
+
+        @query(
+            sql=(fooTable.select().where(fooTable.c.bar == bindparam("bar"))),
+            load=one(Foo),
+        )
+        async def getFooAlchemized(self, bar: int) -> Foo:
+            ...
 
     @query(
         sql="select bar, baz from foo order by bar asc",
@@ -66,9 +94,27 @@ class FooAccessPattern(Protocol):
     def allFoos(self) -> AsyncIterable[Foo]:
         ...
 
+    if alchemized:
+
+        @query(
+            sql=(fooTable.select()),
+            load=many(Foo),
+        )
+        def allFoosAlchemized(self) -> AsyncIterable[Foo]:
+            ...
+
     @query(sql="select bar, baz from foo where bar = {bar}", load=maybe(Foo))
     async def maybeFoo(self, bar: int) -> Optional[Foo]:
         ...
+
+    if alchemized:
+
+        @query(
+            sql=(fooTable.select().where(fooTable.c.bar == bindparam("bar"))),
+            load=maybe(Foo),
+        )
+        async def maybeFooAlchemized(self, bar: int) -> Foo | None:
+            ...
 
     @query(sql="select bar, baz from foo where baz = {baz}", load=one(Foo))
     async def oneFooByBaz(self, baz: int) -> Foo:
@@ -119,6 +165,15 @@ class FooAccessPattern(Protocol):
         Create a new C{Foo} and return it.
         """
 
+    @query(
+        sql="select {repeat}, {repeat}",
+        load=one(lambda db, first, second: (first, second)),
+    )
+    async def repeatedArgument(self, repeat: str) -> tuple[str, str]:
+        """
+        Ensure a repeated argument is the same.
+        """
+
 
 class OtherAccessPattern(Protocol):
     @query(sql="select {value} + 1", load=one(lambda db, x: x))
@@ -158,7 +213,7 @@ class AccessTestCase(TestCase):
     Tests for L{accessor} and its associated functions
     """
 
-    @immediateTest()
+    @immediateTest(styles=["qmark", "named", "numeric_dollar"])
     async def test_happyPath(self, pool: MemoryPool) -> None:
         """
         Declaring a protocol with a query and executing it
@@ -175,7 +230,27 @@ class AccessTestCase(TestCase):
         self.assertEqual(result, result2)
         self.assertEqual(result3, [Foo(db, 1, 3), Foo(db, 2, 4)])
 
-    @immediateTest()
+    @skipIf(not alchemized, "SQLAlchemy not installed")
+    @immediateTest(styles=["qmark", "named", "numeric_dollar"])
+    async def test_happyPathAlchemized(self, pool: MemoryPool) -> None:
+        """
+        Test the same functionality as test_happyPath but with SQLAlchemy
+        queries.
+        """
+        async with transaction(pool.connectable) as c:
+            await schemaAndData(c)
+            db = accessFoo(c)
+            result = await db.getFooAlchemized(1)
+            result2 = await db.maybeFooAlchemized(1)
+            result3 = [  # pragma: no branch
+                each async for each in db.allFoosAlchemized()
+            ]
+        self.assertEqual(result, Foo(db, 1, 3))
+        self.assertEqual(result, result2)
+        self.assertEqual(result3, [Foo(db, 1, 3), Foo(db, 2, 4)])
+
+    # game branch coverage a little bit by selecting a non-qmark style
+    @immediateTest(styles=["named"])
     async def test_defaultParamValue(self, pool: MemoryPool) -> None:
         """
         Default parameters specified by the access Protocol are incorporated
@@ -188,6 +263,13 @@ class AccessTestCase(TestCase):
             self.assertEqual(result, "7")
             result = await db.echoValue()
             self.assertEqual(result, "3")
+
+    @immediateTest(styles=["qmark", "named", "numeric_dollar"])
+    async def test_repeatParams(self, pool: MemoryPool) -> None:
+        async with transaction(pool.connectable) as c:
+            db = accessFoo(c)
+            values = await db.repeatedArgument("test-value")
+            self.assertEqual(values, ("test-value", "test-value"))
 
     @immediateTest()
     async def test_wrongResultArity(self, pool: MemoryPool) -> None:
@@ -236,6 +318,32 @@ class AccessTestCase(TestCase):
 
             class DoesntUseBar(Protocol):
                 @statement(sql="fake sql")
+                async def someMissing(self, bar: str) -> None:
+                    ...
+
+    @skipIf(not alchemized, "SQLAlchemy not installed")
+    def test_argumentExhaustivenessAlchemized(self) -> None:
+        """
+        L{test_argumentExhaustiveness} but with SQLAlchemy bindparams rather
+        than string placeholders
+        """
+        with self.assertRaises(ParamMismatch) as pm:
+
+            class MissingBar(Protocol):
+                @statement(
+                    sql=fooTable.select().where(
+                        fooTable.c.bar == bindparam("bar")
+                    )
+                )
+                async def someUnused(self) -> None:
+                    ...
+
+        self.assertIn("bar", str(pm.exception))
+        self.assertIn("someUnused", str(pm.exception))
+        with self.assertRaises(ParamMismatch):
+
+            class DoesntUseBar(Protocol):
+                @statement(sql=fooTable.select())
                 async def someMissing(self, bar: str) -> None:
                     ...
 

@@ -7,7 +7,16 @@ asynchronous.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Optional, Sequence, TypeVar, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+)
 
 from ._typing_compat import Protocol
 from .dbapi import DBAPIColumnDescription
@@ -25,7 +34,14 @@ ParamStyle = str
 # Sadly, db-api modules do not restrict themselves in this way, so we can't
 # specify the ParamStyle type more precisely, like so:
 
-# ParamStyle = Literal['qmark', 'numeric', 'named', 'format', 'pyformat']
+StrictParamStyle = Literal[
+    "qmark",
+    "numeric",
+    "named",
+    "format",
+    "pyformat",
+    "numeric_dollar",
+]
 
 T = TypeVar("T")
 
@@ -57,7 +73,7 @@ class AsyncCursor(Protocol):
     async def execute(
         self,
         operation: str,
-        parameters: Union[Sequence[Any], dict[str, Any]] = (),
+        parameters: Union[Sequence[Any], Mapping[str, Any]] = (),
     ) -> object:
         ...
 

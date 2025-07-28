@@ -3,7 +3,16 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
-from typing import Any, Callable, Coroutine, List, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Coroutine,
+    List,
+    Literal,
+    Sequence,
+    TypeVar,
+)
 from unittest import TestCase
 from uuid import uuid4
 
@@ -18,6 +27,12 @@ from .async_dbapi import AsyncConnectable
 from .dbapi import DBAPIConnection
 
 
+if TYPE_CHECKING:
+    SQLiteStyle = (
+        Literal["qmark"] | Literal["named"] | Literal["numeric_dollar"]
+    )
+
+
 def sqlite3Connector() -> Callable[[], DBAPIConnection]:
     """
     Create an in-memory shared-cache SQLite3 database and return a 0-argument
@@ -25,17 +40,16 @@ def sqlite3Connector() -> Callable[[], DBAPIConnection]:
     """
     uri = f"file:{str(uuid4())}?mode=memory&cache=shared"
 
-    held = None
+    held: list[DBAPIConnection] = []
 
     def connect() -> DBAPIConnection:
         # This callable has to hang on to a connection to the underlying SQLite
         # data structures, otherwise its schema and shared cache disappear as
-        # soon as it's garbage collected.  This 'nonlocal' stateemnt adds it to
-        # the closure, which keeps the reference after it's created.
-        nonlocal held
+        # soon as it's garbage collected.
+        held
         return sqlite3.connect(uri, uri=True)
 
-    held = connect()
+    held.append(connect())
     return connect
 
 
@@ -88,7 +102,12 @@ class MemoryPool:
         return steps
 
     @classmethod
-    def new(cls) -> MemoryPool:
+    def new(
+        cls,
+        style: (
+            Literal["named"] | Literal["qmark"] | Literal["numeric_dollar"]
+        ) = "qmark",
+    ) -> MemoryPool:
         """
         Create a synchronous memory connection pool.
         """
@@ -105,7 +124,7 @@ class MemoryPool:
         return MemoryPool(
             adaptSynchronousDriver(
                 sqlite3Connector(),
-                sqlite3.paramstyle,
+                style,
                 createWorker=createWorker,
                 callFromThread=lambda f: f(),
                 maxIdleConnections=10,
@@ -177,6 +196,7 @@ class ImmediateDeferred:
 
 def immediateTest(
     driver: ImmediateDriver = ImmediateDeferred,
+    styles: Sequence[SQLiteStyle] = ("qmark",),
 ) -> Callable[[syncAsyncTest[AnyTestCase]], regularTest[AnyTestCase]]:
     """
     Decorate an C{async def} test that expects a coroutine.
@@ -184,12 +204,24 @@ def immediateTest(
 
     def decorator(decorated: syncAsyncTest[AnyTestCase]) -> regularTest:
         def regular(self: AnyTestCase) -> None:
-            pool = MemoryPool.new()
-            d = driver.schedule(self.fail, decorated(self, pool))
-            d.assertNoResult()
-            while pool.flush():
-                pass
-            d.assertSuccessResult()
+            def body(
+                style: SQLiteStyle,
+            ) -> None:
+                pool = MemoryPool.new(style=style)
+                d = driver.schedule(self.fail, decorated(self, pool))
+                d.assertNoResult()
+                while pool.flush():
+                    pass
+                d.assertSuccessResult()
+
+            # this slightly odd style is meant to encode which style fails in
+            # the traceback
+            if "qmark" in styles:
+                body("qmark")
+            if "named" in styles:
+                body("named")
+            if "numeric_dollar" in styles:
+                body("numeric_dollar")
 
         return regular
 

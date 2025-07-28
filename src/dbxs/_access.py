@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from inspect import (
     BoundArguments,
+    Signature,
     currentframe,
     getsourcefile,
     getsourcelines,
@@ -17,10 +18,10 @@ from typing import (
     Awaitable,
     Callable,
     Coroutine,
-    Dict,
     Generic,
     Iterable,
     List,
+    Mapping,
     NoReturn,
     Optional,
     Sequence,
@@ -29,8 +30,21 @@ from typing import (
     Union,
 )
 
+
+try:
+    from sqlalchemy.engine.default import DefaultDialect
+    from sqlalchemy.engine.interfaces import Dialect
+    from sqlalchemy.sql.expression import Select
+except ImportError:
+    pass
+
 from ._typing_compat import ParamSpec, Protocol
-from .async_dbapi import AsyncConnection, AsyncCursor
+from .async_dbapi import (
+    AsyncConnection,
+    AsyncCursor,
+    ParamStyle,
+    StrictParamStyle,
+)
 
 
 T = TypeVar("T")
@@ -182,7 +196,7 @@ def one(
 
 
 def maybe(
-    load: Callable[..., T]
+    load: Callable[..., T],
 ) -> Callable[[object, AsyncCursor], Coroutine[object, object, Optional[T]]]:
     """
     Fetch a single result and pass it to a translator function, but return None
@@ -197,7 +211,7 @@ def maybe(
 
 
 def many(
-    load: Callable[..., T]
+    load: Callable[..., T],
 ) -> Callable[[object, AsyncCursor], AsyncIterable[T]]:
     """
     Fetch multiple results with a function to translate rows.
@@ -255,33 +269,66 @@ class QueryMetadata(Generic[A]):
     Metadata defining a certain function on a protocol as a query method.
     """
 
-    sql: str
+    name: str
+    sql: str | Select
     load: Callable[[AccessProxy, AsyncCursor], A]
-    proxyMethod: Callable[..., Awaitable[object]] = field(init=False)
+    signature: Signature
+    compilationCache: dict[ParamStyle | Dialect, tuple[str, BinderMap]]
 
-    def setOn(self, protocolMethod: Any) -> None:
+    def computeSQLFor(
+        self, style: ParamStyle | Dialect
+    ) -> tuple[str, BinderMap]:
+        try:
+            return self.compilationCache[style]
+        except KeyError as ke:
+            if isinstance(self.sql, str):
+                mapFactory = styles[
+                    (
+                        style
+                        if isinstance(style, ParamStyle)
+                        else style.paramstyle
+                    )
+                ]
+                mapInstance = mapFactory()
+                styledSQL = self.sql.format_map(mapInstance)
+                self.compilationCache[style] = (styledSQL, mapInstance)
+            else:
+                # Right now all the precomputed SQL is generated at compile
+                # time.
+                strictStyle: StrictParamStyle = (
+                    style  # type:ignore[assignment]
+                )
+                compiled = self.sql.compile(
+                    dialect=(
+                        style
+                        if isinstance(style, Dialect)
+                        else DefaultDialect(strictStyle)
+                    )
+                )
+                positionTup = compiled.positiontup
+                mapInstance = (
+                    NamedParamstyleMap("", list(compiled.bind_names.values()))
+                    if positionTup is None
+                    else IndexCountingParamstyleMap("", positionTup)
+                )
+
+                self.compilationCache[style] = str(compiled), mapInstance
+
+            selfExcluded = list(self.signature.parameters)[1:]
+            if set(mapInstance.names) != set(selfExcluded):
+                raise ParamMismatch(
+                    f"when defining {self.name}(...), "
+                    f"SQL placeholders {mapInstance.names} != "
+                    f"function params {selfExcluded}"
+                ) from ke
+            return self.compilationCache[style]
+
+    def implement(self) -> Callable[..., Any]:
         """
-        Attach this QueryMetadata to the given protocol method definition,
-        checking its arguments and computing C{proxyMethod} in the process,
-        raising L{ParamMismatch} if the expected parameters do not match.
+        Construct an implementation of the method at runtime.
         """
-        sig = signature(protocolMethod)
-        precomputedSQL: Dict[str, Tuple[str, NameMapMapping]] = {}
-        for style, mapFactory in styles.items():
-            mapInstance = mapFactory()
-            styledSQL = self.sql.format_map(mapInstance)
-            precomputedSQL[style] = (styledSQL, mapInstance)
 
-        sampleSQL, sampleInstance = precomputedSQL["qmark"]
-        selfExcluded = list(sig.parameters)[1:]
-        if set(sampleInstance.names) != set(selfExcluded):
-            raise ParamMismatch(
-                f"when defining {protocolMethod.__name__}(...), "
-                f"SQL placeholders {sampleInstance.names} != "
-                f"function params {selfExcluded}"
-            )
-
-        def proxyMethod(
+        def implementationMethod(
             proxySelf: AccessProxy, *args: object, **kw: object
         ) -> Any:
             """
@@ -293,14 +340,13 @@ class QueryMetadata(Generic[A]):
                 the awaitable path, we should not need to do the runtime check
                 every time.
             """
-
             maybeai: MaybeAIterable
 
             async def body() -> Any:
                 conn = proxySelf.__query_connection__
-                styledSQL, styledMap = precomputedSQL[conn.paramstyle]
+                styledSQL, styledMap = self.computeSQLFor(conn.paramstyle)
                 cur = await conn.cursor()
-                bound = sig.bind(None, *args, **kw)
+                bound = self.signature.bind(None, *args, **kw)
                 bound.apply_defaults()
                 await cur.execute(styledSQL, styledMap.queryArguments(bound))
                 maybeAgen: Any = self.load(proxySelf, cur)
@@ -310,17 +356,33 @@ class QueryMetadata(Generic[A]):
                     await cur.close()
                     return result
                 else:
-                    # if it's aiterable, we should be iterating it, not
+                    # if it's aiterable, we should be aiterating it, not
                     # awaiting it.  MaybeAIterable takes care of the implicit
                     # await of _this_ coroutine.
-                    nonlocal maybeai
                     maybeai.cursor = cur
                     return maybeAgen
 
             maybeai = MaybeAIterable(body())
             return maybeai
 
-        self.proxyMethod = proxyMethod
+        return implementationMethod
+
+    @classmethod
+    def decorateMethod(
+        cls,
+        protocolMethod: Any,
+        sql: str | Select,
+        load: Callable[[AccessProxy, AsyncCursor], A],
+    ) -> None:
+        """
+        Attach a QueryMetadata to the given protocol method definition,
+        checking its arguments and computing C{proxyMethod} in the process,
+        raising L{ParamMismatch} if the expected parameters do not match.
+        """
+        sig = signature(protocolMethod)
+        self = cls(protocolMethod.__name__, sql, load, sig, {})
+        self.computeSQLFor("qmark")
+
         setattr(protocolMethod, METADATA_KEY, self)
 
     @classmethod
@@ -336,7 +398,13 @@ class QueryMetadata(Generic[A]):
         cls, protocolNamespace: Iterable[Tuple[str, object]]
     ) -> Iterable[Tuple[str, QueryMetadata]]:
         """
-        Load all QueryMetadata
+        Filter the namespace of a give L{Protocol} object to find all the
+        methods decorated with L{query} or L{statement}, and return the
+        L{QueryMetadata} objects corresponding to those decorations, paired
+        with their names.
+
+        @return: an iterable of 2-tuples of (name of method decorated with
+            L{query}, L{QueryMetadata} object describing that query).
         """
         extraneous = []
         for attrname, value in protocolNamespace:
@@ -354,16 +422,15 @@ class QueryMetadata(Generic[A]):
 
 def query(
     *,
-    sql: str,
+    sql: str | Select,
     load: Callable[[AccessProxy, AsyncCursor], A],
 ) -> Callable[[Callable[P, A]], Callable[P, A]]:
     """
-    Declare a query method.
+    Declare a query method (i.e. a DQL statement).
     """
-    qm = QueryMetadata(sql=sql, load=load)
 
     def decorator(f: Callable[P, A]) -> Callable[P, A]:
-        qm.setOn(f)
+        QueryMetadata.decorateMethod(f, sql, load)
         return f
 
     return decorator
@@ -371,25 +438,15 @@ def query(
 
 def statement(
     *,
-    sql: str,
+    sql: str | Select,
 ) -> Callable[
     [Callable[P, Coroutine[Any, Any, None]]],
     Callable[P, Coroutine[Any, Any, None]],
 ]:
     """
-    Declare a query method.
+    Declare a data-modification (DML) method.
     """
     return query(sql=sql, load=zero)
-
-
-@dataclass
-class DBProxy:
-    """
-    Database Proxy
-    """
-
-    name: str
-    transaction: AsyncConnection
 
 
 @dataclass
@@ -408,6 +465,36 @@ class IndexCountingParamstyleMap:
         return [bound.arguments[each] for each in self.names]
 
 
+@dataclass
+class NumericParamstyleMap:
+    prefix: str
+    names: List[str] = field(default_factory=list)
+
+    def __getitem__(self, name: str) -> str:
+        if name not in self.names:
+            self.names.append(name)
+        return f"{self.prefix}{self.names.index(name) + 1}"
+
+    def queryArguments(self, bound: BoundArguments) -> Sequence[object]:
+        """
+        Compute the arguments to the query.
+        """
+        return [bound.arguments[each] for each in self.names]
+
+
+@dataclass
+class NamedParamstyleMap:
+    prefix: str
+    names: list[str] = field(default_factory=list)
+
+    def __getitem__(self, name: str) -> str:
+        self.names.append(name)
+        return f":{name}"
+
+    def queryArguments(self, bound: BoundArguments) -> Mapping[str, object]:
+        return {each: bound.arguments[each] for each in self.names}
+
+
 class _EmptyProtocol(Protocol):
     """
     Empty protocol for setting a baseline of what attributes to ignore while
@@ -418,19 +505,27 @@ class _EmptyProtocol(Protocol):
 PROTOCOL_IGNORED_ATTRIBUTES = set(_EmptyProtocol.__dict__.keys())
 
 
-class NameMapMapping(Protocol):
-    names: List[str]
+class BinderMap(Protocol):
+    @property
+    def names(self) -> Sequence[str]:
+        ...
 
     def __getitem__(self, __key: str) -> Any:
         ...
 
-    def queryArguments(self, bound: BoundArguments) -> Sequence[object]:
+    def queryArguments(
+        self, bound: BoundArguments
+    ) -> Sequence[object] | Mapping[str, object]:
         ...
 
 
-styles: dict[str, Callable[[], NameMapMapping]] = {
+styles: dict[str, Callable[[], BinderMap]] = {
     "qmark": lambda: IndexCountingParamstyleMap("?"),
+    "numeric": lambda: NumericParamstyleMap(":"),
+    "named": lambda: NamedParamstyleMap(":"),
+    "format": lambda: IndexCountingParamstyleMap("%s"),
     "pyformat": lambda: IndexCountingParamstyleMap("%s"),
+    "numeric_dollar": lambda: NumericParamstyleMap("$"),
 }
 
 
@@ -444,7 +539,8 @@ class AccessProxy:
 
 
 def accessor(
-    accessPatternProtocol: Callable[[], T]
+    accessPatternProtocol: Callable[[], T],
+    prevalidationStyle: ParamStyle | Dialect = "qmark",
 ) -> Callable[[AsyncConnection], T]:
     """
     Create a factory which binds a database transaction in the form of an
@@ -454,7 +550,7 @@ def accessor(
         f"_{accessPatternProtocol.__name__}_Accessor",
         tuple([AccessProxy]),
         {
-            name: metadata.proxyMethod
+            name: metadata.implement()
             for name, metadata in QueryMetadata.filterProtocolNamespace(
                 accessPatternProtocol.__dict__.items()
             )

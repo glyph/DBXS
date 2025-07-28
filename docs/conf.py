@@ -23,4 +23,8 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "alabaster"
-html_static_path = ["_static"]
+html_static_path = []
+
+# sqlalchemy.org is just entirely down right now, let's ignore it until it
+# comes back
+linkcheck_ignore = [r"https://docs.sqlalchemy.org/.*"]

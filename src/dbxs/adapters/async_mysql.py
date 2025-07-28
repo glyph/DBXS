@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Optional, Sequence, Union
+from typing import Any, Awaitable, Callable, Mapping, Optional, Sequence, Union
 
 from mysql.connector import paramstyle as mysqlParamStyle
 from mysql.connector.aio.abstracts import (
@@ -52,9 +52,13 @@ class _MYSQL2DBXSCursor:
     async def execute(
         self,
         operation: str,
-        parameters: Union[Sequence[Any], dict[str, Any]] = (),
+        parameters: Union[Sequence[Any], Mapping[str, Any]] = (),
     ) -> object:
-        await self._mysqlcur.execute(operation, parameters)
+        await self._mysqlcur.execute(
+            operation,
+            # mysql only supports dict() but let's not be too picky
+            parameters,  # type:ignore[arg-type]
+        )
         return None
 
     # async def executemany(
