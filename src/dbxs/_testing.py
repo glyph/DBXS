@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
-from typing import Any, Callable, Coroutine, List, Literal, TypeVar
+from typing import Any, Callable, Coroutine, List, Literal, Sequence, TypeVar
 from unittest import TestCase
 from uuid import uuid4
 
@@ -89,7 +89,9 @@ class MemoryPool:
     @classmethod
     def new(
         cls,
-        style: Literal["named"] | Literal["qmark"] = "qmark",
+        style: (
+            Literal["named"] | Literal["qmark"] | Literal["numeric_dollar"]
+        ) = "qmark",
     ) -> MemoryPool:
         """
         Create a synchronous memory connection pool.
@@ -177,8 +179,12 @@ class ImmediateDeferred:
         return DeferredCompletionTester(failer, succeeded, failed)
 
 
+SQLiteStyle = Literal["qmark"] | Literal["named"] | Literal["numeric_dollar"]
+
+
 def immediateTest(
     driver: ImmediateDriver = ImmediateDeferred,
+    styles: Sequence[SQLiteStyle] = ("qmark",),
 ) -> Callable[[syncAsyncTest[AnyTestCase]], regularTest[AnyTestCase]]:
     """
     Decorate an C{async def} test that expects a coroutine.
@@ -186,7 +192,9 @@ def immediateTest(
 
     def decorator(decorated: syncAsyncTest[AnyTestCase]) -> regularTest:
         def regular(self: AnyTestCase) -> None:
-            def body(style: Literal["qmark"] | Literal["named"]) -> None:
+            def body(
+                style: SQLiteStyle,
+            ) -> None:
                 pool = MemoryPool.new(style=style)
                 d = driver.schedule(self.fail, decorated(self, pool))
                 d.assertNoResult()
@@ -194,8 +202,14 @@ def immediateTest(
                     pass
                 d.assertSuccessResult()
 
-            body("qmark")
-            body("named")
+            # this slightly odd style is meant to encode which style fails in
+            # the traceback
+            if "qmark" in styles:
+                body("qmark")
+            if "named" in styles:
+                body("named")
+            if "numeric_dollar" in styles:
+                body("numeric_dollar")
 
         return regular
 

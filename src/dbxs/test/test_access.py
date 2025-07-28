@@ -204,7 +204,7 @@ class AccessTestCase(TestCase):
     Tests for L{accessor} and its associated functions
     """
 
-    @immediateTest()
+    @immediateTest(styles=["qmark", "named", "numeric_dollar"])
     async def test_happyPath(self, pool: MemoryPool) -> None:
         """
         Declaring a protocol with a query and executing it
@@ -222,7 +222,7 @@ class AccessTestCase(TestCase):
         self.assertEqual(result3, [Foo(db, 1, 3), Foo(db, 2, 4)])
 
     @skipIf(not alchemized, "SQLAlchemy not installed")
-    @immediateTest()
+    @immediateTest(styles=["qmark", "named", "numeric_dollar"])
     async def test_happyPathAlchemized(self, pool: MemoryPool) -> None:
         """
         Test the same functionality as test_happyPath but with SQLAlchemy
