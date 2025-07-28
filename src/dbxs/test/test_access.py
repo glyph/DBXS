@@ -303,6 +303,31 @@ class AccessTestCase(TestCase):
                 async def someMissing(self, bar: str) -> None:
                     ...
 
+    def test_argumentExhaustivenessAlchemized(self) -> None:
+        """
+        L{test_argumentExhaustiveness} but with SQLAlchemy bindparams rather
+        than string placeholders
+        """
+        with self.assertRaises(ParamMismatch) as pm:
+
+            class MissingBar(Protocol):
+                @statement(
+                    sql=fooTable.select().where(
+                        fooTable.c.bar == bindparam("bar")
+                    )
+                )
+                async def someUnused(self) -> None:
+                    ...
+
+        self.assertIn("bar", str(pm.exception))
+        self.assertIn("someUnused", str(pm.exception))
+        with self.assertRaises(ParamMismatch):
+
+            class DoesntUseBar(Protocol):
+                @statement(sql=fooTable.select())
+                async def someMissing(self, bar: str) -> None:
+                    ...
+
     @immediateTest()
     async def test_tooManyResults(self, pool: MemoryPool) -> None:
         """
