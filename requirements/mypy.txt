@@ -1,5 +1,6 @@
 -r postgres.txt
+-r mysql.txt
+-r sqlalchemy.txt
 mypy==1.15.0
 mypy-zope==1.0.11
-mysql-connector-python==9.2.0
 types-click==7.1.8
