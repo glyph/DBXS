@@ -14,7 +14,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from queue import Queue
 from threading import Thread
-from typing import Any, Awaitable, Callable, Optional, Sequence, TypeVar
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Mapping,
+    Optional,
+    Sequence,
+    TypeVar,
+)
 
 from twisted._threads import AlreadyQuit, ThreadWorker
 from twisted._threads._ithreads import IExclusiveWorker
@@ -150,7 +158,7 @@ class ThreadedCursorAdapter(AsyncCursor):
     async def execute(
         self,
         operation: str,
-        parameters: Sequence[Any] | dict[str, Any] = (),
+        parameters: Sequence[Any] | Mapping[str, Any] = (),
     ) -> object:
         """
         Execute the given statement.
