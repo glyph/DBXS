@@ -35,7 +35,12 @@ ParamStyle = str
 # specify the ParamStyle type more precisely, like so:
 
 StrictParamStyle = Literal[
-    "qmark", "numeric", "named", "format", "pyformat", "numeric_dollar"
+    "qmark",
+    "numeric",
+    "named",
+    "format",
+    "pyformat",
+    "numeric_dollar",
 ]
 
 T = TypeVar("T")

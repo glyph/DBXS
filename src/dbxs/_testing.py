@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
-from typing import Any, Callable, Coroutine, List, TypeVar
+from typing import Any, Callable, Coroutine, List, Literal, TypeVar
 from unittest import TestCase
 from uuid import uuid4
 
@@ -27,12 +27,13 @@ def sqlite3Connector() -> Callable[[], DBAPIConnection]:
 
     held = None
 
-    def connect() -> DBAPIConnection:
+    def connect(
+        *,
         # This callable has to hang on to a connection to the underlying SQLite
         # data structures, otherwise its schema and shared cache disappear as
-        # soon as it's garbage collected.  This 'nonlocal' stateemnt adds it to
-        # the closure, which keeps the reference after it's created.
-        nonlocal held
+        # soon as it's garbage collected.
+        held: object = held,
+    ) -> DBAPIConnection:
         return sqlite3.connect(uri, uri=True)
 
     held = connect()
@@ -88,7 +89,10 @@ class MemoryPool:
         return steps
 
     @classmethod
-    def new(cls) -> MemoryPool:
+    def new(
+        cls,
+        style: Literal["named"] | Literal["qmark"] = "qmark",
+    ) -> MemoryPool:
         """
         Create a synchronous memory connection pool.
         """
@@ -105,7 +109,7 @@ class MemoryPool:
         return MemoryPool(
             adaptSynchronousDriver(
                 sqlite3Connector(),
-                sqlite3.paramstyle,
+                style,
                 createWorker=createWorker,
                 callFromThread=lambda f: f(),
                 maxIdleConnections=10,
@@ -184,12 +188,16 @@ def immediateTest(
 
     def decorator(decorated: syncAsyncTest[AnyTestCase]) -> regularTest:
         def regular(self: AnyTestCase) -> None:
-            pool = MemoryPool.new()
-            d = driver.schedule(self.fail, decorated(self, pool))
-            d.assertNoResult()
-            while pool.flush():
-                pass
-            d.assertSuccessResult()
+            def body(style: Literal["qmark"] | Literal["named"]) -> None:
+                pool = MemoryPool.new(style=style)
+                d = driver.schedule(self.fail, decorated(self, pool))
+                d.assertNoResult()
+                while pool.flush():
+                    pass
+                d.assertSuccessResult()
+
+            body("qmark")
+            body("named")
 
         return regular
 

@@ -34,7 +34,6 @@ from typing import (
 try:
     from sqlalchemy.engine.default import DefaultDialect
     from sqlalchemy.engine.interfaces import Dialect
-    from sqlalchemy.sql.compiler import SQLCompiler
     from sqlalchemy.sql.expression import Select
 except ImportError:
     pass
@@ -265,24 +264,6 @@ class MaybeAIterable:
 
 
 @dataclass
-class SQLAlchemyMapping:
-    compiled: SQLCompiler
-
-    @property
-    def names(self) -> list[str]:
-        return list(self.compiled.bind_names.values())
-
-    def __getitem__(self, __key: str) -> Any:
-        ...
-
-    def queryArguments(self, bound: BoundArguments) -> Sequence[object]:
-        # in sqlalchemy (or indeed for any named bind-param driver) this really
-        # wants to be returning a named dictionary rather than a
-        # sequence[object]
-        return [bound.arguments[each] for each in self.names]
-
-
-@dataclass
 class QueryMetadata(Generic[A]):
     """
     Metadata defining a certain function on a protocol as a query method.
@@ -324,9 +305,14 @@ class QueryMetadata(Generic[A]):
                         else DefaultDialect(strictStyle)
                     )
                 )
-                self.compilationCache[style] = str(compiled), (
-                    mapInstance := SQLAlchemyMapping(compiled)
+                positionTup = compiled.positiontup
+                mapInstance = (
+                    NamedParamstyleMap("", list(compiled.bind_names.values()))
+                    if positionTup is None
+                    else IndexCountingParamstyleMap("", positionTup)
                 )
+
+                self.compilationCache[style] = str(compiled), mapInstance
 
             selfExcluded = list(self.signature.parameters)[1:]
             if set(mapInstance.names) != set(selfExcluded):
@@ -480,7 +466,25 @@ class IndexCountingParamstyleMap:
 
 
 @dataclass
+class NumericParamstyleMap:
+    prefix: str
+    names: List[str] = field(default_factory=list)
+
+    def __getitem__(self, name: str) -> str:
+        if name not in self.names:
+            self.names.append(name)
+        return f"{self.prefix}{self.names.index(name) + 1}"
+
+    def queryArguments(self, bound: BoundArguments) -> Sequence[object]:
+        """
+        Compute the arguments to the query.
+        """
+        return [bound.arguments[each] for each in self.names]
+
+
+@dataclass
 class NamedParamstyleMap:
+    prefix: str
     names: list[str] = field(default_factory=list)
 
     def __getitem__(self, name: str) -> str:
@@ -517,8 +521,11 @@ class BinderMap(Protocol):
 
 styles: dict[str, Callable[[], BinderMap]] = {
     "qmark": lambda: IndexCountingParamstyleMap("?"),
+    "numeric": lambda: NumericParamstyleMap(":"),
+    "named": lambda: NamedParamstyleMap(":"),
+    "format": lambda: IndexCountingParamstyleMap("%s"),
     "pyformat": lambda: IndexCountingParamstyleMap("%s"),
-    "named": lambda: NamedParamstyleMap(),
+    "numeric_dollar": lambda: NumericParamstyleMap("$"),
 }
 
 
