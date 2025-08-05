@@ -17,7 +17,10 @@ def queries(moduleName: str, dialect: str) -> Iterable[CompiledQuery]:
     from twisted.python.modules import getModule
 
     for module in getModule(moduleName).walkModules():
-        loaded = module.load()
+        try:
+            loaded = module.load()
+        except ImportError:
+            continue
         for defined in loaded.__dict__.values():
             if (
                 isinstance(defined, type)
