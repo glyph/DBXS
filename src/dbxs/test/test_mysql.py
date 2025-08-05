@@ -6,6 +6,8 @@ from os import environ
 from typing import AsyncIterable
 from unittest import skipIf
 
+from mysql.connector.pooling import PooledMySQLConnection
+
 from twisted.trial.unittest import SynchronousTestCase as TestCase
 
 from dbxs import accessor, many, one, query
@@ -38,7 +40,9 @@ else:
         cantFindMySQL = f"could not connect: {e} ({environ.get('MYSQL_USER')})"
 
 
-async def configuredConnectAsync() -> MySQLConnectionAbstract:
+async def configuredConnectAsync() -> (
+    MySQLConnectionAbstract | PooledMySQLConnection
+):
     connected = await connectAsync(
         user=environ["MYSQL_USER"], password=environ["MYSQL_PWD"]
     )
