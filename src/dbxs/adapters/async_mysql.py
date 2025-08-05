@@ -9,6 +9,7 @@ from mysql.connector.aio.abstracts import (
     MySQLConnectionAbstract,
     MySQLCursorAbstract,
 )
+from mysql.connector.pooling import PooledMySQLConnection
 
 from ..async_dbapi import (
     AsyncConnectable,
@@ -73,7 +74,7 @@ class _MYSQL2DBXSCursor:
 
 @dataclass
 class _MYSQL2DBXSAdapter:
-    _mysqlcon: MySQLConnectionAbstract
+    _mysqlcon: MySQLConnectionAbstract | PooledMySQLConnection
 
     @property
     def paramstyle(self) -> ParamStyle:
@@ -89,11 +90,15 @@ class _MYSQL2DBXSAdapter:
         await self._mysqlcon.commit()
 
     async def close(self) -> None:
-        await self._mysqlcon.close()
+        awaitable = self._mysqlcon.close()
+        if awaitable is not None:
+            await awaitable
 
 
 def adaptMySQL(
-    connection: Callable[[], Awaitable[MySQLConnectionAbstract]]
+    connection: Callable[
+        [], Awaitable[MySQLConnectionAbstract | PooledMySQLConnection]
+    ]
 ) -> AsyncConnectable:
     """
     Adapt a connection created by U{mysql.connector.aio.connect
