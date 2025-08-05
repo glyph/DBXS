@@ -16,6 +16,9 @@ extend-exclude =
 
 # Codes: https://flake8.pycqa.org/en/latest/user/error-codes.html
 extend-ignore =
+    # "line break before binary operator"; directly conflicts with Black
+    W503,
+
     ######## WARNINGS BELOW SHOULD BE FIXED ########
 
     # Missing docstring in public module

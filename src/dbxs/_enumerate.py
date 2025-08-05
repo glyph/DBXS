@@ -19,7 +19,11 @@ def queries(moduleName: str, dialect: str) -> Iterable[CompiledQuery]:
     for module in getModule(moduleName).walkModules():
         loaded = module.load()
         for defined in loaded.__dict__.values():
-            if isinstance(defined, type) and issubclass(defined, AccessProxy):
+            if (
+                isinstance(defined, type)
+                and issubclass(defined, AccessProxy)
+                and defined is not AccessProxy
+            ):
                 protocol = defined.__dbxs_protocol__
                 metadatums = QueryMetadata.filterProtocolNamespace(
                     protocol.__dict__.items()
