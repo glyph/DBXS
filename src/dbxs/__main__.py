@@ -17,7 +17,7 @@ def showAllQueries(moduleName: str) -> None:
         print(compiled.sql)
 
 
-if __name__ == "__main__":
-    from sys import argv
+if __name__ == "__main__":  # pragma: no branch
+    from sys import argv  # pragma: no cover
 
-    showAllQueries(argv[1])
+    showAllQueries(argv[1])  # pragma: no cover
