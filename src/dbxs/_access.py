@@ -17,6 +17,7 @@ from typing import (
     AsyncIterable,
     Awaitable,
     Callable,
+    ClassVar,
     Coroutine,
     Generic,
     Iterable,
@@ -243,7 +244,7 @@ async def zero(loader: object, cursor: AsyncCursor) -> None:
     return None
 
 
-METADATA_KEY = "__query_metadata__"
+METADATA_KEY = "__dbxs_metadata__"
 
 
 @dataclass
@@ -343,7 +344,7 @@ class QueryMetadata(Generic[A]):
             maybeai: MaybeAIterable
 
             async def body() -> Any:
-                conn = proxySelf.__query_connection__
+                conn = proxySelf.__dbxs_connection__
                 styledSQL, styledMap = self.computeSQLFor(conn.paramstyle)
                 cur = await conn.cursor()
                 bound = self.signature.bind(None, *args, **kw)
@@ -535,7 +536,9 @@ class AccessProxy:
     Superclass of all access proxies.
     """
 
-    __query_connection__: AsyncConnection
+    __dbxs_connection__: AsyncConnection
+
+    __dbxs_protocol__: ClassVar[type[object]]
 
 
 def accessor(
@@ -550,9 +553,12 @@ def accessor(
         f"_{accessPatternProtocol.__name__}_Accessor",
         tuple([AccessProxy]),
         {
-            name: metadata.implement()
-            for name, metadata in QueryMetadata.filterProtocolNamespace(
-                accessPatternProtocol.__dict__.items()
-            )
+            "__dbxs_protocol__": accessPatternProtocol,
+            **{
+                name: metadata.implement()
+                for name, metadata in QueryMetadata.filterProtocolNamespace(
+                    accessPatternProtocol.__dict__.items()
+                )
+            },
         },
     )
