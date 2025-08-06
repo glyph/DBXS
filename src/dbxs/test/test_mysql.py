@@ -22,10 +22,8 @@ except ImportError:
 else:
     from mysql.connector import NUMBER, STRING
     from mysql.connector.aio import connect as connectAsync
-    from mysql.connector.aio.abstracts import MySQLConnectionAbstract
-    from mysql.connector.pooling import PooledMySQLConnection
 
-    from ..adapters.async_mysql import adaptMySQL
+    from ..adapters.async_mysql import SomeMySQLConnection, adaptMySQL
 
     try:
         with connect(
@@ -39,9 +37,7 @@ else:
         cantFindMySQL = f"could not connect: {e} ({environ.get('MYSQL_USER')})"
 
 
-async def configuredConnectAsync() -> (
-    MySQLConnectionAbstract | PooledMySQLConnection
-):
+async def configuredConnectAsync() -> SomeMySQLConnection:
     connected = await connectAsync(
         user=environ["MYSQL_USER"], password=environ["MYSQL_PWD"]
     )

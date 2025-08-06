@@ -72,9 +72,12 @@ class _MYSQL2DBXSCursor:
         await self._mysqlcur.close()
 
 
+SomeMySQLConnection = MySQLConnectionAbstract | PooledMySQLConnection
+
+
 @dataclass
 class _MYSQL2DBXSAdapter:
-    _mysqlcon: MySQLConnectionAbstract | PooledMySQLConnection
+    _mysqlcon: SomeMySQLConnection
 
     @property
     def paramstyle(self) -> ParamStyle:
@@ -96,9 +99,7 @@ class _MYSQL2DBXSAdapter:
 
 
 def adaptMySQL(
-    connection: Callable[
-        [], Awaitable[MySQLConnectionAbstract | PooledMySQLConnection]
-    ]
+    connection: Callable[[], Awaitable[SomeMySQLConnection]]
 ) -> AsyncConnectable:
     """
     Adapt a connection created by U{mysql.connector.aio.connect
@@ -114,4 +115,5 @@ def adaptMySQL(
 
 __all__ = [
     "adaptMySQL",
+    "SomeMySQLConnection",
 ]
