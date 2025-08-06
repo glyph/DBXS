@@ -6,8 +6,6 @@ from os import environ
 from typing import AsyncIterable
 from unittest import skipIf
 
-from mysql.connector.pooling import PooledMySQLConnection
-
 from twisted.trial.unittest import SynchronousTestCase as TestCase
 
 from dbxs import accessor, many, one, query
@@ -25,6 +23,7 @@ else:
     from mysql.connector import NUMBER, STRING
     from mysql.connector.aio import connect as connectAsync
     from mysql.connector.aio.abstracts import MySQLConnectionAbstract
+    from mysql.connector.pooling import PooledMySQLConnection
 
     from ..adapters.async_mysql import adaptMySQL
 
