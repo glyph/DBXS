@@ -9,7 +9,7 @@ from mysql.connector.aio.abstracts import (
     MySQLConnectionAbstract,
     MySQLCursorAbstract,
 )
-from mysql.connector.pooling import PooledMySQLConnection
+from mysql.connector.aio.pooling import PooledMySQLConnection
 
 from ..async_dbapi import (
     AsyncConnectable,
