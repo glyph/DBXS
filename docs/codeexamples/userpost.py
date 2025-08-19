@@ -1,9 +1,17 @@
 from __future__ import annotations
 
-import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, AsyncIterable, Protocol
+
+# from userpost_sqlite import (
+from userpost_gres import (
+    DriverConnection,
+    IntegrityError,
+    driverConnect,
+    driverParamStyle,
+    schemaPath,
+)
 
 from twisted.internet.defer import Deferred
 from twisted.internet.interfaces import IReactorCore
@@ -14,31 +22,15 @@ from dbxs.adapters.dbapi_twisted import adaptSynchronousDriver
 from dbxs.async_dbapi import transaction
 
 
-schema = """
-CREATE TABLE IF NOT EXISTS user (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS post (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    created TIMESTAMP NOT NULL,
-    content TEXT NOT NULL,
-    author INTEGER NOT NULL,
-    FOREIGN KEY(author)
-        REFERENCES user(id)
-        ON DELETE CASCADE
-);
-"""
+with schemaPath.open() as f:
+    schema = f.read()
 
 
-def newConnection() -> sqlite3.dbapi2.Connection:
-    result = sqlite3.connect("user-posts.sqlite")
-    return result
+def newConnection() -> DriverConnection:
+    return driverConnect()
 
 
-asyncDriver = adaptSynchronousDriver(
-    (lambda: newConnection()), sqlite3.paramstyle
-)
+asyncDriver = adaptSynchronousDriver(newConnection, driverParamStyle)
 
 
 # user attributes
@@ -68,13 +60,24 @@ class Post:
 class PostDB(Protocol):
     @query(
         sql="""
-        insert into user(name)
+        insert into "user"(name)
         values({name})
         returning id, name
         """,
         load=one(User),
     )
     async def createUser(self, name: str) -> User:
+        ...
+
+    @query(
+        sql="""
+        select id, name
+        from "user"
+        where name = {name}
+        """,
+        load=one(User),
+    )
+    async def loadUserNamed(self, name: str) -> User:
         ...
 
     @query(
@@ -108,19 +111,36 @@ class BlogRepo:
 blog = repository(BlogRepo)
 
 
-async def main() -> None:
+async def ensureSchema() -> None:
     async with transaction(asyncDriver) as c:
         cur = await c.cursor()
         for expr in schema.split(";"):
             await cur.execute(expr)
 
+
+async def makePostsBy(name: str) -> None:
+    try:
+        async with blog(asyncDriver) as db:
+            poster = await db.posts.createUser(name)
+    except IntegrityError:
+        print(f"user already exists: {name}")
     async with blog(asyncDriver) as db:
-        b = await db.posts.createUser("bob")
-        await b.post("a post")
-        await b.post("another post")
-        post: Post
-        async for post in b.posts():
+        poster = await db.posts.loadUserNamed(name)
+        await poster.post("a post")
+        await poster.post("another post")
+
+
+async def readPostsBy(name: str) -> None:
+    async with blog(asyncDriver) as db:
+        poster = await db.posts.loadUserNamed(name)
+        async for post in poster.posts():
             print(post.created, repr(post.content))
+
+
+async def main() -> None:
+    await ensureSchema()
+    await makePostsBy("bob")
+    await readPostsBy("bob")
 
 
 if __name__ == "__main__":
