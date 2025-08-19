@@ -8,7 +8,7 @@ from unittest import skipIf
 
 from twisted.trial.unittest import SynchronousTestCase as TestCase
 
-from dbxs import accessor, many, one, query
+from dbxs import accessor, many, one, query, statement
 from dbxs.async_dbapi import transaction
 
 from .._typing_compat import Protocol
@@ -63,6 +63,21 @@ class PGInternalsAccess(Protocol):
     ) -> AsyncIterable[SimpleRow]:
         ...
 
+    @query(
+        sql="select relname from pg_class where relname like {name};",
+        load=many(lambda db, relname: relname),
+    )
+    def relationsLike(self, name: str) -> AsyncIterable[str]:
+        ...
+
+    @statement(
+        sql="""
+        create table foo (bar integer, baz integer);
+    """
+    )
+    async def createTable(self) -> None:
+        ...
+
 
 pgia = accessor(PGInternalsAccess)
 
@@ -89,6 +104,24 @@ class AccessTestCase(TestCase):
                     await adaptPostgreSQL(AsyncConnection.connect).connect()
                 ).getPostgresVersion(),
             )
+
+        get_event_loop().run_until_complete(_())
+
+    def test_createTable(self) -> None:
+        """
+        Let's test a DML statement.
+        """
+
+        async def _() -> None:
+            pg = pgia(await adaptPostgreSQL(AsyncConnection.connect).connect())
+            await pg.createTable()
+            collected = []
+            async for relname in pg.relationsLike("foo"):
+                collected.append(relname)
+            self.assertEqual(collected, ["foo"])
+            # NB: We do not need a cleanup here, because unlike if we used
+            # repository() and transaction(), all our work here gets rolled
+            # back automatically, because we do not commit()
 
         get_event_loop().run_until_complete(_())
 

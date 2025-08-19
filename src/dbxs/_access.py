@@ -238,6 +238,12 @@ async def zero(loader: object, cursor: AsyncCursor) -> None:
     """
     Zero record loader.
     """
+    description = await cursor.description()
+    if description is None:
+        # DML statements with no RETURNING will have no description on their
+        # results, and thus in some database drivers will simply return an
+        # error from fetchone() rather than returning None.
+        return None
     result = await cursor.fetchone()
     if result is not None:
         raise TooManyResults("statemnts should not return values")
