@@ -72,8 +72,8 @@ class PGInternalsAccess(Protocol):
 
     @statement(
         sql="""
-        create table foo (bar integer, baz integer);
-    """
+        create table blorf (bar integer, baz integer);
+        """
     )
     async def createTable(self) -> None:
         ...
@@ -116,9 +116,9 @@ class AccessTestCase(TestCase):
             pg = pgia(await adaptPostgreSQL(AsyncConnection.connect).connect())
             await pg.createTable()
             collected = []
-            async for relname in pg.relationsLike("foo"):
+            async for relname in pg.relationsLike("blorf"):
                 collected.append(relname)
-            self.assertEqual(collected, ["foo"])
+            self.assertEqual(collected, ["blorf"])
             # NB: We do not need a cleanup here, because unlike if we used
             # repository() and transaction(), all our work here gets rolled
             # back automatically, because we do not commit()
