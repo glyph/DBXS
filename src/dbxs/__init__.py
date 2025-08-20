@@ -18,7 +18,7 @@ from ._access import (
 from ._repository import repository
 
 
-__version__ = "0.1.0"
+__version__ = "2025.8.20"
 
 
 __all__ = [
