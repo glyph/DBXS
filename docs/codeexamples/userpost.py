@@ -2,38 +2,44 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, AsyncIterable, Protocol
-
-# from userpost_sqlite import (
-from userpost_gres import (
-    DriverConnection,
-    IntegrityError,
-    driverConnect,
-    driverParamStyle,
-    schemaPath,
-)
-
-from twisted.internet.defer import Deferred
-from twisted.internet.interfaces import IReactorCore
-from twisted.python.failure import Failure
+from typing import AsyncIterable, Protocol
 
 from dbxs import many, one, query, repository, statement
 from dbxs.adapters.dbapi_twisted import adaptSynchronousDriver
 from dbxs.async_dbapi import transaction
 
 
+POSTGRES = False
+
+IntegrityError: type[Exception]
+if POSTGRES:
+    from userpost_gres import (
+        IntegrityError,
+        driverConnect,
+        driverParamStyle,
+        schemaPath,
+    )
+else:
+    # start sqlite imports
+    from userpost_sqlite import (
+        IntegrityError,
+        driverConnect,
+        driverParamStyle,
+        schemaPath,
+    )
+
+    # end sqlite imports
+
 with schemaPath.open() as f:
     schema = f.read()
 
 
-def newConnection() -> DriverConnection:
-    return driverConnect()
+# start driver
+asyncDriver = adaptSynchronousDriver(driverConnect, driverParamStyle)
+# end driver
 
 
-asyncDriver = adaptSynchronousDriver(newConnection, driverParamStyle)
-
-
-# user attributes
+# start user attributes
 @dataclass
 class User:
     postDB: PostDB
@@ -41,33 +47,45 @@ class User:
     name: str
     # end user attributes
 
+    # start user methods
     async def post(self, text: str) -> None:
         return await self.postDB.makePostByUser(datetime.now(), text, self.id)
 
     def posts(self) -> AsyncIterable[Post]:
         return self.postDB.postsForUser(self.id)
 
+    # end user methods
 
+
+# start post
 @dataclass
 class Post:
     postDB: PostDB
+    postID: int
+    authorID: int
     created: datetime
     content: str
-    id: int
-    what: object
 
 
+# end post
+
+
+# start postdb protocol
 class PostDB(Protocol):
+    # start postdb methods
+    # start createUser
     @query(
         sql="""
-        insert into "user"(name)
-        values({name})
-        returning id, name
+        INSERT INTO "user"(name)
+        VALUES({name})
+        RETURNING id, name
         """,
         load=one(User),
     )
     async def createUser(self, name: str) -> User:
         ...
+
+    # end createUser
 
     @query(
         sql="""
@@ -80,9 +98,10 @@ class PostDB(Protocol):
     async def loadUserNamed(self, name: str) -> User:
         ...
 
+    # start postsForUser
     @query(
         sql="""
-        select created, content, author, id
+        select id, author, created, content
         from post
         where author = {userID}
         """,
@@ -91,6 +110,9 @@ class PostDB(Protocol):
     def postsForUser(self, userID: int) -> AsyncIterable[Post]:
         ...
 
+    # end postsForUser
+
+    # start makePostByUser
     @statement(
         sql="""
         insert into post( created,   content,   author)
@@ -102,15 +124,22 @@ class PostDB(Protocol):
     ) -> None:
         ...
 
+    # end makePostByUser
 
+
+# start repo
 @dataclass
 class BlogRepo:
     posts: PostDB
+    # end repo
 
 
+# start make repo
 blog = repository(BlogRepo)
+# end make repo
 
 
+# start ensureSchema
 async def ensureSchema() -> None:
     async with transaction(asyncDriver) as c:
         cur = await c.cursor()
@@ -118,10 +147,15 @@ async def ensureSchema() -> None:
             await cur.execute(expr)
 
 
+# end ensureSchema
+
+
+# start makePostsBy
 async def makePostsBy(name: str) -> None:
     try:
         async with blog(asyncDriver) as db:
             poster = await db.posts.createUser(name)
+            print(f"created poster: {poster.name}")
     except IntegrityError:
         print(f"user already exists: {name}")
     async with blog(asyncDriver) as db:
@@ -130,6 +164,10 @@ async def makePostsBy(name: str) -> None:
         await poster.post("another post")
 
 
+# end makePostsBy
+
+
+# start readPostsBy
 async def readPostsBy(name: str) -> None:
     async with blog(asyncDriver) as db:
         poster = await db.posts.loadUserNamed(name)
@@ -137,26 +175,20 @@ async def readPostsBy(name: str) -> None:
             print(post.created, repr(post.content))
 
 
-async def main() -> None:
+# end readPostsBy
+
+
+# start main
+async def main(reactor: object) -> None:
     await ensureSchema()
     await makePostsBy("bob")
     await readPostsBy("bob")
 
 
+# end main
+# start boilerplate
 if __name__ == "__main__":
-    reactor: IReactorCore
-    if not TYPE_CHECKING:
-        from twisted.internet import reactor
+    from twisted.internet.task import react
 
-    def reportAndStop(f: Failure | None) -> None:
-        reactor.stop()
-        if f is not None:
-            print(f)
-        else:
-            return f
-        print("STOP")
-
-    reactor.callWhenRunning(
-        lambda: (Deferred.fromCoroutine(main()).addBoth(reportAndStop))
-    )
-    reactor.run()
+    react(main)
+# end boilerplate
