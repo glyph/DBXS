@@ -270,3 +270,5 @@ for examples, and:
   to the ``sql=`` rather than strings, and using
   ``sqlalchemy.sql.expression.bindparam`` rather than ``"{placeholder}"``
   syntax.
+- enumerate the full text of the queries your application uses with ``python -m
+  dbxs`` so you can ``EXPLAIN`` them ahead of time
