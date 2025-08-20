@@ -1,5 +1,5 @@
 Getting Started with DBXS
-=================
+=========================
 
 Let’s create a simple data access layer that uses DBXS to interface with its
 database.  We will use the canonical example of a blog, with 2 database tables.
@@ -237,5 +237,36 @@ read some blog posts:
    :start-after: start readPostsBy
    :end-before: end readPostsBy
 
-Here we simply consume the ``AsyncIterable`` we created before with an ``async
-for``, and as described, it is a series of ``Post`` objects.
+Here we can consume the ``AsyncIterable`` we created before with an ``async
+for``, and as described, it yields ``Post`` objects.
+
+That's about it for the basic structure of DBXS.  To review the steps for using
+it:
+
+1. Define your value classes in terms of basic dataclasses, or functions which
+   take row outputs.
+1. Connect to your database with an async driver; any synchronous driver can be
+   adapted using ``adaptSynchronousDriver``.
+2. Construct a data-access :py:class:`protocol <typing.Protocol>` for each
+   section of your database interface, decorating all of its methods with
+   ``@query`` or ``@statement``, adding ``load=`` parameters with ``one(...)`` or
+   ``many(...)`` as appropriate.
+3. Collect those access protocols into a repository dataclass, and make a
+   factory out of it with ``repository(...)``.
+4. Execute transactions against your database ``async with
+   yourRep(yourDriver):``
+5. Enjoy type-safe, simple data access to your SQL database!
+
+More documentation for these other features will be forthcoming, but in the
+meanwhile, if you're interested you can dive into the code and DBXS's own tests
+for examples, and:
+
+- write quick, synchronous tests for your data-access layer, using SQLite
+  with ``dbxs.testing.MemoryPool`` and ``dbxs.testing.immediateTest``.
+- integrate with asyncio, rather than Twisted, and native async database
+  drivers for PostgreSQL and MySQL rather than a threadpool, using the packages
+  in ``dbxs.adapters.*``
+- use SQLAlchemy Core to generate your SQL, by passing SQLAlchemy query objects
+  to the ``sql=`` rather than strings, and using
+  ``sqlalchemy.sql.expression.bindparam`` rather than ``"{placeholder}"``
+  syntax.
