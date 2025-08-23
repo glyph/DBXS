@@ -10,8 +10,27 @@ One of the primary design principles of DBXS is that, everywhere we can, we
 will use *regular python features*.  We want to couple to the DBXS library in
 as few places as possible.
 
-Therefore, to begin with, we will use a couple of regular ``dataclass``\es.  One
-for users, which have ID numbers and names:
+Starting with an SQL Schema
+---------
+
+DBXS is for applications that need fine-grained control over their database
+interface, so let's begin by writing an SQL schema.  This is a minimal schema
+for a blog with users and blog posts, with a ``FOREIGN KEY`` constraint that
+relates posts to users:
+
+.. literalinclude:: codeexamples/userpost-schema.sql
+   :language: sql
+
+This is 100% plain SQL, nothing related to DBXS at all here.
+
+Defining your Value Classes
+---------------------------
+
+Having defined our schema in SQL, we will then want to define some simple data
+structures to correspond to rows in each of the tables we have described.
+
+For this, we will use a couple of regular ``dataclass``\es.  One for users,
+which have ID numbers and names:
 
 .. literalinclude:: codeexamples/userpost.py
    :start-after: start user attributes
@@ -24,36 +43,32 @@ creation timestamp and their text content:
    :start-after: start post
    :end-before: end post
 
-DBXS is for applications that need fine-grained control over their database
-interface, so let's just write a SQL schema that corresponds to these data
-types by hand, with columns that correspond to the attributes, complete with a
-``FOREIGN KEY`` constraint that relates posts to users:
-
-.. literalinclude:: codeexamples/userpost-schema.sql
-   :language: sql
-
-This is 100% plain SQL, nothing related to DBXS at all here.
-
 The only hint that even the classes above might have *any* interface with a
 database is that ``postDB`` attribute that both have, and its attendant
-``PostDB`` type.  So let's define that now.
+``PostDB`` type.  This is where we will begin using DBXS, so let's define that
+type now.
+
+Defining your Data-Access Protocol with ``typing.Protocol`` and ``@dbxs.query``
+-------------------------------------------------------------------------------
 
 The core of any DBXS data access layer is a :py:class:`typing.Protocol`, that
-defines a series of methods that will interface with the database, so let's
-start defining that.
+defines a series of methods that will interface with the database.  To begin
+defining that, we will subclass :py:class:`typing.Protocol`:
 
 .. literalinclude:: codeexamples/userpost.py
    :start-after: start postdb protocol
    :end-before: start postdb methods
 
-The reason we are using an abstract protocol is that we want a type that
-defines all the correct method signatures and types for your type-checker, but
-the concrete implementation is going to be provided by DBXS, later.  However,
-although we aren't going to specify Python code to implement these methods, we
-have to tell DBXS what SQL queries these methods correspond to.  We will do
-that with the ``@query`` decorator.  For our first method, let's create and
-return a user; taking a name, but returning the database-generated ID.  First
-let's make sure we have the relevant imports:
+The reason we are using a :py:class:`protocol <typing.Protocol>` is that we
+want a type that defines all the correct method signatures and types for your
+type-checker.  The concrete implementation is going to be provided by DBXS,
+later.  However, although we aren't going to specify Python code to implement
+these methods.  We have to tell DBXS what SQL queries these methods correspond
+to.  We will do that with the ``@query`` decorator.
+
+For our first method, let's create and return a user; taking a name, but
+returning the database-generated ID.  First let's make sure we have the
+relevant imports:
 
 .. code-block::
    from dbxs import query, one
@@ -128,6 +143,9 @@ work with itself, we can put some methods onto ``User`` as well, that call these
    :start-after: start user methods
    :end-before: end user methods
 
+Organizing Multiple Data-Access Protocols with a ``repository``
+---------------------------------------------------------------
+
 Now, you may notice that although we can put logic into our row values, we are
 cramming all of the *queries* into a single class.  DBXS is a query
 *organizer*, not a query pile, so in order to allow us to separate out our
@@ -154,9 +172,14 @@ To glue all this together and make sure we have defined our ``@query`` methods c
    :end-before: end make repo
 
 Now, we have a ``blog`` repository that can connect up to a database for us,
-but first we need to say *which* database.  Just for starters, let's use
-SQLite.  In the interests of demonstrating some cross-database functionality
-later on, let's put our SQLite-specific stuff in its own file:
+but first we need to say *which* database.
+
+Using Synchronous DB-API 2.0 Drivers with ``adaptSynchronousDriver``
+--------------------------------------------------------------------
+
+Just for starters, let's use SQLite.  In the interests of demonstrating some
+cross-database functionality later on, let's put our SQLite-specific stuff in
+its own file:
 
 .. literalinclude:: codeexamples/userpost_sqlite.py
 
@@ -184,6 +207,10 @@ A little bit of boilerplate to run a ``main`` function coroutine:
    :start-after: start boilerplate
    :end-before: end boilerplate
 
+
+Execuing Raw SQL using ``async with transaction(driver) as connection:``
+------------------------------------------------------------------------
+
 Now, in order to bootstrap our database and use all these fancy SQL queries
 we've defined, we *will* need to somehow actually make sure our schema is
 applied, and in order to do that we will make use of DBXS's transaction
@@ -208,6 +235,9 @@ The ``as`` value for that block is an object like a DB-API 2 “connection”,
 where all the methods are asynchronous.  So here we make a cursor, then
 manually ``execute()`` each statement in our schema, splitting them by
 semicolon.
+
+Accessing your data protocols using ``async with someRepo(driver) as db:``
+--------------------------------------------------------------------------
 
 Finally, let's put it all together: let's create a user and make some posts:
 
@@ -241,8 +271,12 @@ read some blog posts:
 Here we can consume the ``AsyncIterable`` we created before with an ``async
 for``, and as described, it yields ``Post`` objects.
 
-That's about it for the basic structure of DBXS.  To review the steps for using
-it:
+Review and Conclusion
+---------------------
+
+That's about it for the basic structure of DBXS.
+
+To review the steps for using it:
 
 1. Define your value classes in terms of basic dataclasses, or functions which
    take row outputs.

@@ -70,7 +70,7 @@ have a ``PostDB`` as its first attribute, then an integer ``id`` and a string
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Table of Contents:
 
    howto

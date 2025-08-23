@@ -28,6 +28,11 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_theme = "furo"
 html_static_path = []
+html_theme_options = {
+    "navigation_depth": 4,
+    "show_nav_level": 4,
+}
+
 
 linkcheck_ignore = [
     # r"https://docs.sqlalchemy.org/.*"
