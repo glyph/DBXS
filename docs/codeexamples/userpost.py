@@ -30,6 +30,7 @@ else:
 
     # end sqlite imports
 
+
 with schemaPath.open() as f:
     schema = f.read()
 
@@ -53,8 +54,7 @@ class User:
 
     def posts(self) -> AsyncIterable[Post]:
         return self.postDB.postsForUser(self.id)
-
-    # end user methods
+        # end user methods
 
 
 # start post
@@ -65,9 +65,7 @@ class Post:
     authorID: int
     created: datetime
     content: str
-
-
-# end post
+    # end post
 
 
 # start postdb protocol
@@ -84,8 +82,7 @@ class PostDB(Protocol):
     )
     async def createUser(self, name: str) -> User:
         ...
-
-    # end createUser
+        # end createUser
 
     @query(
         sql="""
@@ -109,8 +106,7 @@ class PostDB(Protocol):
     )
     def postsForUser(self, userID: int) -> AsyncIterable[Post]:
         ...
-
-    # end postsForUser
+        # end postsForUser
 
     # start makePostByUser
     @statement(
@@ -123,8 +119,7 @@ class PostDB(Protocol):
         self, created: datetime, content: str, author: int
     ) -> None:
         ...
-
-    # end makePostByUser
+        # end makePostByUser
 
 
 # start repo
@@ -145,9 +140,7 @@ async def ensureSchema() -> None:
         cur = await c.cursor()
         for expr in schema.split(";"):
             await cur.execute(expr)
-
-
-# end ensureSchema
+    # end ensureSchema
 
 
 # start makePostsBy
@@ -162,9 +155,7 @@ async def makePostsBy(name: str) -> None:
         poster = await db.posts.loadUserNamed(name)
         await poster.post("a post")
         await poster.post("another post")
-
-
-# end makePostsBy
+    # end makePostsBy
 
 
 # start readPostsBy
@@ -173,9 +164,7 @@ async def readPostsBy(name: str) -> None:
         poster = await db.posts.loadUserNamed(name)
         async for post in poster.posts():
             print(post.created, repr(post.content))
-
-
-# end readPostsBy
+    # end readPostsBy
 
 
 # start main
@@ -183,9 +172,9 @@ async def main(reactor: object) -> None:
     await ensureSchema()
     await makePostsBy("bob")
     await readPostsBy("bob")
+    # end main
 
 
-# end main
 # start boilerplate
 if __name__ == "__main__":
     from twisted.internet.task import react

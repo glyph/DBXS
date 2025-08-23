@@ -30,6 +30,7 @@ types by hand, with columns that correspond to the attributes, complete with a
 ``FOREIGN KEY`` constraint that relates posts to users:
 
 .. literalinclude:: codeexamples/userpost-schema.sql
+   :language: sql
 
 This is 100% plain SQL, nothing related to DBXS at all here.
 
