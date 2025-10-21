@@ -33,10 +33,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_theme = "furo"
 html_static_path = ["_static"]
-html_theme_options = {
-    "navigation_depth": 4,
-    "show_nav_level": 4,
-}
+html_theme_options: dict[str, str] = {}
 
 
 linkcheck_ignore: list[str] = [
@@ -55,7 +52,7 @@ _git_reference = subprocess.run(
     encoding="utf8",
     capture_output=True,
     check=True,
-).stdout
+).stdout.strip()
 
 
 # Try to find URL fragment for the GitHub source page based on current
@@ -72,10 +69,15 @@ if os.environ.get("READTHEDOCS", "") == "True":
         # It looks like we have a tag build.
         _git_reference = rtd_version
 
+intersphinx_mapping = {
+    "py3": ("https://docs.python.org/3", None),
+    "zopeinterface": ("https://zopeinterface.readthedocs.io/en/latest", None),
+    "twisted": ("https://docs.twisted.org/en/twisted-25.5.0/api", None),
+}
 pydoctor_args = [
     # pydoctor should not fail the sphinx build, we have another tox
     # environment for that.
-    "--intersphinx=https://docs.twisted.org/en/twisted-22.1.0/api/objects.inv",
+    "--intersphinx=https://docs.twisted.org/en/twisted-25.5.0/api/objects.inv",
     "--intersphinx=https://docs.python.org/3/objects.inv",
     "--intersphinx=https://zopeinterface.readthedocs.io/en/latest/objects.inv",
     "--intersphinx=https://datetype.readthedocs.io/en/latest/objects.inv",
@@ -90,10 +92,3 @@ pydoctor_args = [
     str(_source_root / "dbxs"),
 ]
 pydoctor_url_path = "/en/{rtd_version}/api/"
-
-
-intersphinx_mapping = {
-    "py3": ("https://docs.python.org/3", None),
-    "zopeinterface": ("https://zopeinterface.readthedocs.io/en/latest", None),
-    "twisted": ("https://docs.twisted.org/en/twisted-22.1.0/api", None),
-}

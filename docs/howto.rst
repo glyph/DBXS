@@ -11,7 +11,7 @@ will use *regular python features*.  We want to couple to the DBXS library in
 as few places as possible.
 
 Starting with an SQL Schema
----------
+---------------------------
 
 DBXS is for applications that need fine-grained control over their database
 interface, so let's begin by writing an SQL schema.  This is a minimal schema
@@ -70,7 +70,8 @@ For our first method, let's create and return a user; taking a name, but
 returning the database-generated ID.  First let's make sure we have the
 relevant imports:
 
-.. code-block::
+.. code-block:: python
+
    from dbxs import query, one
 
 and then here's the method that goes in the ``PostDB`` protocol:
@@ -280,17 +281,17 @@ To review the steps for using it:
 
 1. Define your value classes in terms of basic dataclasses, or functions which
    take row outputs.
-1. Connect to your database with an async driver; any synchronous driver can be
+2. Connect to your database with an async driver; any synchronous driver can be
    adapted using ``adaptSynchronousDriver``.
-2. Construct a data-access :py:class:`protocol <typing.Protocol>` for each
+3. Construct a data-access :py:class:`protocol <typing.Protocol>` for each
    section of your database interface, decorating all of its methods with
    ``@query`` or ``@statement``, adding ``load=`` parameters with ``one(...)`` or
    ``many(...)`` as appropriate.
-3. Collect those access protocols into a repository dataclass, and make a
+4. Collect those access protocols into a repository dataclass, and make a
    factory out of it with ``repository(...)``.
-4. Execute transactions against your database ``async with
+5. Execute transactions against your database ``async with
    yourRep(yourDriver):``
-5. Enjoy type-safe, simple data access to your SQL database!
+6. Enjoy type-safe, simple data access to your SQL database!
 
 More documentation for these other features will be forthcoming, but in the
 meanwhile, if you're interested you can dive into the code and DBXS's own tests

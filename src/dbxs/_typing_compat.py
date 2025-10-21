@@ -1,7 +1,7 @@
 """
 Since we support a range of Python and Mypy versions where certain features are
-available across L{typing} and L{typing_extensions}, we put those aliases here
-to avoid repeating conditional import logic.
+available across L{typing} and the C{typing_extensions} fallback, we put those
+aliases here to avoid repeating conditional import logic.
 """
 
 import sys
