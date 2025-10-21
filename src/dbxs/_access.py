@@ -405,8 +405,8 @@ class QueryMetadata(Generic[A]):
         cls, protocolNamespace: Iterable[Tuple[str, object]]
     ) -> Iterable[Tuple[str, QueryMetadata]]:
         """
-        Filter the namespace of a give L{Protocol} object to find all the
-        methods decorated with L{query} or L{statement}, and return the
+        Filter the namespace of a given L{typing.Protocol} object to find all
+        the methods decorated with L{query} or L{statement}, and return the
         L{QueryMetadata} objects corresponding to those decorations, paired
         with their names.
 

@@ -65,7 +65,7 @@ have a ``PostDB`` as its first attribute, then an integer ``id`` and a string
 ``name``.
 
 .. literalinclude:: codeexamples/userpost.py
-   :start-after: # user attributes
+   :start-after: # start user attributes
    :end-before: # end user attributes
 
 
@@ -74,6 +74,7 @@ have a ``PostDB`` as its first attribute, then an integer ``id`` and a string
    :caption: Table of Contents:
 
    howto
+   api/index
 
 Indices and tables
 ==================

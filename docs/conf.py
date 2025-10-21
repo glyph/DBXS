@@ -1,10 +1,15 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-
+"""
+Configuration file for the Sphinx documentation builder.
+For the full list of built-in configuration values, see the documentation:
+https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+
+import os
+import pathlib
+import subprocess
+
 
 project = "DBXS"
 copyright = "2023, Glyph"
@@ -15,7 +20,7 @@ author = "Glyph"
 
 extensions = [
     "sphinx.ext.intersphinx",
-    # "pydoctor.sphinx_ext.build_apidocs",
+    "pydoctor.sphinx_ext.build_apidocs",
     "sphinx.ext.autosectionlabel",
 ]
 
@@ -27,21 +32,63 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "furo"
-html_static_path = []
-html_theme_options = {
-    "navigation_depth": 4,
-    "show_nav_level": 4,
-}
+html_static_path = ["_static"]
+html_theme_options: dict[str, str] = {}
 
 
-linkcheck_ignore = [
+linkcheck_ignore: list[str] = [
     # r"https://docs.sqlalchemy.org/.*"
 ]
 
 # extension options
 
+
+_project_root = pathlib.Path(__file__).parent.parent
+_source_root = _project_root / "src"
+
+_git_reference = subprocess.run(
+    ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+    text=True,
+    encoding="utf8",
+    capture_output=True,
+    check=True,
+).stdout.strip()
+
+
+# Try to find URL fragment for the GitHub source page based on current
+# branch or tag.
+
+if _git_reference == "HEAD":
+    # It looks like the branch has no name.
+    # Fallback to commit ID.
+    _git_reference = subprocess.getoutput("git rev-parse HEAD")
+
+if os.environ.get("READTHEDOCS", "") == "True":
+    rtd_version = os.environ.get("READTHEDOCS_VERSION", "")
+    if "." in rtd_version:
+        # It looks like we have a tag build.
+        _git_reference = rtd_version
+
 intersphinx_mapping = {
     "py3": ("https://docs.python.org/3", None),
     "zopeinterface": ("https://zopeinterface.readthedocs.io/en/latest", None),
-    "twisted": ("https://docs.twisted.org/en/twisted-22.1.0/api", None),
+    "twisted": ("https://docs.twisted.org/en/twisted-25.5.0/api", None),
 }
+pydoctor_args = [
+    # pydoctor should not fail the sphinx build, we have another tox
+    # environment for that.
+    "--intersphinx=https://docs.twisted.org/en/twisted-25.5.0/api/objects.inv",
+    "--intersphinx=https://docs.python.org/3/objects.inv",
+    "--intersphinx=https://zopeinterface.readthedocs.io/en/latest/objects.inv",
+    "--intersphinx=https://datetype.readthedocs.io/en/latest/objects.inv",
+    # TODO: not sure why I have to specify these all twice.
+    f"--config={_project_root}/.pydoctor.cfg",
+    f"--html-viewsource-base=https://github.com/glyph/dbxs/tree/{_git_reference}/src",
+    f"--project-base-dir={_source_root}",
+    "--html-output={outdir}/api",
+    "--privacy=HIDDEN:dbxs.test.*",
+    "--privacy=HIDDEN:dbxs.test",
+    "--privacy=HIDDEN:**.__post_init__",
+    str(_source_root / "dbxs"),
+]
+pydoctor_url_path = "/en/{rtd_version}/api/"

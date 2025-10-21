@@ -6,7 +6,8 @@ Deferreds.
 
 While this adapter does require Twisted be installed, it does I{not}
 technically require the Twisted mainloop to be running, if you supply your own
-analog to L{twisted.internet.interfaces.IReactorThreads.callFromThread}.
+analog to the C{callFromThread} method on
+L{twisted.internet.interfaces.IReactorThreads}.
 """
 
 from __future__ import annotations
