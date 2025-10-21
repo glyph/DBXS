@@ -19,6 +19,16 @@ extend-ignore =
     # "line break before binary operator"; directly conflicts with Black
     W503,
 
+    # 'no space after :' regex is just broken
+    E203,
+
+    # 'multiple statements on one line' is black's job
+    E704
+
+    # line lengths, also black's job; if it can't shorten the line then let's
+    # leave it
+    E501
+
     ######## WARNINGS BELOW SHOULD BE FIXED ########
 
     # Missing docstring in public module
