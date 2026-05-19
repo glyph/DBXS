@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from asyncio import get_event_loop
+from asyncio import new_event_loop
 from dataclasses import dataclass
 from os import environ
 from typing import AsyncIterable
@@ -102,7 +102,7 @@ class AccessTestCase(TestCase):
                 ).getMysqlVersion(),
             )
 
-        get_event_loop().run_until_complete(_())
+        new_event_loop().run_until_complete(_())
 
     def test_valueConversions(self) -> None:
         async def _() -> None:
@@ -113,7 +113,7 @@ class AccessTestCase(TestCase):
                 everything.append((row.name, row.value))
             self.assertEqual([("hello", 1), ("second", 2)], everything)
 
-        get_event_loop().run_until_complete(_())
+        new_event_loop().run_until_complete(_())
 
 
 @skipIf(cantFindMySQL, cantFindMySQL)
