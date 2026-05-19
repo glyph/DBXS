@@ -28,9 +28,12 @@ from .dbapi import DBAPIConnection
 
 
 if TYPE_CHECKING:
-    SQLiteStyle = (
-        Literal["qmark"] | Literal["named"] | Literal["numeric_dollar"]
-    )
+    SQLiteStyle = Literal[
+        # See https://sqlite.org/lang_expr.html#parameters
+        "qmark",
+        "named",
+        "named_dollar",
+    ]
 
 
 def sqlite3Connector() -> Callable[[], DBAPIConnection]:
@@ -104,9 +107,7 @@ class MemoryPool:
     @classmethod
     def new(
         cls,
-        style: (
-            Literal["named"] | Literal["qmark"] | Literal["numeric_dollar"]
-        ) = "qmark",
+        style: Literal["named", "qmark", "named_dollar"] = "qmark",
     ) -> MemoryPool:
         """
         Create a synchronous memory connection pool.
@@ -220,8 +221,8 @@ def immediateTest(
                 body("qmark")
             if "named" in styles:
                 body("named")
-            if "numeric_dollar" in styles:
-                body("numeric_dollar")
+            if "named_dollar" in styles:
+                body("named_dollar")
 
         return regular
 

@@ -40,7 +40,12 @@ StrictParamStyle = Literal[
     "named",
     "format",
     "pyformat",
+    # numeric_* extensions are defined by
+    # https://python-sql-parameters.readthedocs.io/en/latest/sqlparams.html
     "numeric_dollar",
+    # ... but sqlalchemy only supports numeric_dollar, per
+    # https://github.com/sqlalchemy/sqlalchemy/blob/cb3e0ccbe372cb12a103115618c01ac3c1f2c8b7/lib/sqlalchemy/sql/compiler.py#L273-L280
+    # "named_dollar",
 ]
 
 T = TypeVar("T")

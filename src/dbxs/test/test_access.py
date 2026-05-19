@@ -213,7 +213,7 @@ class AccessTestCase(TestCase):
     Tests for L{accessor} and its associated functions
     """
 
-    @immediateTest(styles=["qmark", "named", "numeric_dollar"])
+    @immediateTest(styles=["qmark", "named", "named_dollar"])
     async def test_happyPath(self, pool: MemoryPool) -> None:
         """
         Declaring a protocol with a query and executing it
@@ -231,7 +231,15 @@ class AccessTestCase(TestCase):
         self.assertEqual(result3, [Foo(db, 1, 3), Foo(db, 2, 4)])
 
     @skipIf(not alchemized, "SQLAlchemy not installed")
-    @immediateTest(styles=["qmark", "named", "numeric_dollar"])
+    @immediateTest(
+        styles=[
+            "qmark",
+            "named",
+            # SQLite supports $ but as named, not as numeric. SQLAlchemy
+            # disagrees that this is possible.
+            # "named_dollar"
+        ]
+    )
     async def test_happyPathAlchemized(self, pool: MemoryPool) -> None:
         """
         Test the same functionality as test_happyPath but with SQLAlchemy
@@ -264,7 +272,7 @@ class AccessTestCase(TestCase):
             result = await db.echoValue()
             self.assertEqual(result, "3")
 
-    @immediateTest(styles=["qmark", "named", "numeric_dollar"])
+    @immediateTest(styles=["qmark", "named", "named_dollar"])
     async def test_repeatParams(self, pool: MemoryPool) -> None:
         async with transaction(pool.connectable) as c:
             db = accessFoo(c)

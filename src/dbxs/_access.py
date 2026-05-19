@@ -1,6 +1,7 @@
 # -*- test-case-name: dbxs.test.test_access -*-
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
 from inspect import (
     BoundArguments,
@@ -92,6 +93,14 @@ class WrongRowShape(TypeError):
     """
 
 
+_PYPY_311_HACK_OFFSET = (
+    -1
+    if sys.implementation.name == "pypy"
+    and ((sys.version_info.major, sys.version_info.minor) == (3, 11),)
+    else 0
+)
+
+
 @dataclass
 class _ExceptionFixer:
     loader: Callable[..., object]
@@ -134,14 +143,15 @@ class _ExceptionFixer:
         decoratedHere.__code__ = decoratedHere.__code__.replace(
             co_name="<<decorated here>>",
             co_filename=realDecorationFrame.f_code.co_filename,
-            co_firstlineno=realDecorationFrame.f_lineno,
+            co_firstlineno=realDecorationFrame.f_lineno
+            + _PYPY_311_HACK_OFFSET,
         )
 
         definedSourceFile = getsourcefile(loader)
         definedHere.__code__ = definedHere.__code__.replace(
             co_name="<<defined here>>",
             co_filename=definedSourceFile or "unknown definition",
-            co_firstlineno=definitionLine,
+            co_firstlineno=definitionLine + _PYPY_311_HACK_OFFSET,
         )
 
         fakeDecorationFrame = decoratedHere()
@@ -532,7 +542,10 @@ styles: dict[str, Callable[[], BinderMap]] = {
     "named": lambda: NamedParamstyleMap(":"),
     "format": lambda: IndexCountingParamstyleMap("%s"),
     "pyformat": lambda: IndexCountingParamstyleMap("%s"),
+    # These DB-API 2.0 extensions are named by
+    # https://python-sql-parameters.readthedocs.io/en/latest/sqlparams.html
     "numeric_dollar": lambda: NumericParamstyleMap("$"),
+    "named_dollar": lambda: NamedParamstyleMap("$"),
 }
 
 
