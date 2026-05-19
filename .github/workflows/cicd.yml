@@ -28,7 +28,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
@@ -62,7 +62,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
@@ -96,7 +96,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
@@ -270,7 +270,7 @@ jobs:
         with:
           python-version: |
             ${{ matrix.python-version }}
-            3.13
+            3.14
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
@@ -337,7 +337,7 @@ jobs:
       # prevent parsing errors in older versions when looking at modern code.
       - uses: "actions/setup-python@v5"
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: "Upload coverage to Codecov"
         uses: "codecov/codecov-action@v5"
