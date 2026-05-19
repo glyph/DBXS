@@ -277,7 +277,7 @@ jobs:
 
       - name: Translate Python version to Tox environment
         shell: python
-        run: |
+        run: |2
           from os import environ
           from pathlib import Path
 
