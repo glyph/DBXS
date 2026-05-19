@@ -276,26 +276,12 @@ jobs:
         uses: twisted/python-info-action@v1
 
       - name: Translate Python version to Tox environment
-        shell: python
-        run: |2
-          from os import environ
-          from pathlib import Path
-
-          py = "${{ matrix.python-version }}"
-          py = "".join(py.split(".")[:2])   # Combine major/minor, toss rest
-          py = py.replace("pypy-", "py")    # For Pypy: have a little less py
-
-          tw = "${{ matrix.twisted-version }}"
-          tw = tw.replace(".", "")
-
-          env = f"${{ matrix.tox-prefix }}-py{py}-tw{tw}${{ matrix.tox-suffix }}"
-
-          print(f"TOX_ENV={env}")
-
-          f = Path(environ["GITHUB_ENV"]).open(mode="a")
-          f.write(f"TOX_ENV={env}\n")
-          f.close()
-
+        run: |
+          TR_PY_VER="${{ matrix.python-version }}" \
+          TR_TW_VER="${{ matrix.twisted-version }}" \
+          TR_TOX_PREFIX="${{ matrix.tox-prefix }}" \
+          TR_TOX_SUFFIX="${{ matrix.tox-suffix }}" \
+          python .github/workflows/trpy.py
       - name: Set up Tox environment
         run: |
           pip install tox
