@@ -37,7 +37,7 @@ docutils==0.21.2
     #   sphinx-rtd-theme
 filelock==3.19.1
     # via cachecontrol
-furo==2025.9.25
+furo==2025.12.19
     # via -r requirements/sphinx.in
 hyperlink==21.0.0
     # via twisted
