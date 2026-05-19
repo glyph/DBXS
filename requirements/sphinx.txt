@@ -116,7 +116,7 @@ typing-extensions==4.15.0
     #   automat
     #   beautifulsoup4
     #   twisted
-urllib3==2.5.0
+urllib3==2.6.3
     # via
     #   pydoctor
     #   requests
