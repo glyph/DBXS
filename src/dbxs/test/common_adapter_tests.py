@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from asyncio.events import get_event_loop
+from asyncio.events import new_event_loop
 from unittest import TestCase
 
 from ..async_dbapi import AsyncConnectable, transaction
@@ -87,4 +87,4 @@ class CommonTests(TestCase, metaclass=CommonMeta):
 
             await cc.quit()
 
-        get_event_loop().run_until_complete(_())
+        new_event_loop().run_until_complete(_())

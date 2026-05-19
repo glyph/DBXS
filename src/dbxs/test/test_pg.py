@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from asyncio import get_event_loop
+from asyncio import new_event_loop
 from dataclasses import dataclass
 from os import environ
 from typing import AsyncIterable
@@ -105,7 +105,7 @@ class AccessTestCase(TestCase):
                 ).getPostgresVersion(),
             )
 
-        get_event_loop().run_until_complete(_())
+        new_event_loop().run_until_complete(_())
 
     def test_createTable(self) -> None:
         """
@@ -123,7 +123,7 @@ class AccessTestCase(TestCase):
             # repository() and transaction(), all our work here gets rolled
             # back automatically, because we do not commit()
 
-        get_event_loop().run_until_complete(_())
+        new_event_loop().run_until_complete(_())
 
     def test_valueConversions(self) -> None:
         async def _() -> None:
@@ -135,7 +135,7 @@ class AccessTestCase(TestCase):
                 everything.append((row.name, row.value))
             self.assertEqual([("hello", 1), ("second", 2)], everything)
 
-        get_event_loop().run_until_complete(_())
+        new_event_loop().run_until_complete(_())
 
     def test_transaction(self) -> None:
         async def _() -> None:
@@ -158,7 +158,7 @@ class AccessTestCase(TestCase):
                 self.assertEqual(NUMBER, typecode)
                 self.assertEqual(STRING, typecode2)
 
-        get_event_loop().run_until_complete(_())
+        new_event_loop().run_until_complete(_())
 
 
 @skipIf(cantFindPG, cantFindPG)
