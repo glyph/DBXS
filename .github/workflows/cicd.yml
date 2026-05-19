@@ -130,7 +130,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
@@ -163,7 +163,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: System Python Information
         uses: twisted/python-info-action@v1
@@ -225,35 +225,35 @@ jobs:
     strategy:
       matrix:
         os: ["ubuntu-latest"]
-        python-version: ["3.10", "3.13", "3.12"]
-        twisted-version: ["21.2", "22.1", "23.10"]
+        python-version: ["3.10", "3.11", "3.12", "3.14"]
+        twisted-version: ["25.5", "26.4"]
         tox-prefix: ["coverage"]
         tox-suffix: [""]
         optional: [false]
         pg-image: [""]
         include:
           - os: "ubuntu-latest"
-            python-version: "pypy-3.10"
+            python-version: "pypy-3.11"
             twisted-version: "current"
             tox-prefix: "coverage"
             optional: false
           - os: "ubuntu-latest"
-            python-version: "3.12"
-            twisted-version: "23.10"
+            python-version: "3.14"
+            twisted-version: "26.4"
             tox-prefix: "coverage"
             tox-suffix: "-postgres"
             pg-image: "postgres:17"
             optional: false
           - os: "ubuntu-latest"
-            python-version: "3.12"
-            twisted-version: "23.10"
+            python-version: "3.14"
+            twisted-version: "26.4"
             tox-prefix: "coverage"
             tox-suffix: "-mysql"
             mysql-image: "mysql:9"
             optional: false
           - os: "ubuntu-latest"
-            python-version: "3.12"
-            twisted-version: "23.10"
+            python-version: "3.14"
+            twisted-version: "26.4"
             tox-prefix: "coverage"
             tox-suffix: "-sqlalchemy"
             optional: false
@@ -283,7 +283,7 @@ jobs:
 
           py = "${{ matrix.python-version }}"
           py = "".join(py.split(".")[:2])   # Combine major/minor, toss rest
-          py = py.replace("pypy-", "py")    # For Pypy: have a litte less py
+          py = py.replace("pypy-", "py")    # For Pypy: have a little less py
 
           tw = "${{ matrix.twisted-version }}"
           tw = tw.replace(".", "")
@@ -292,9 +292,8 @@ jobs:
 
           print(f"TOX_ENV={env}")
 
-          p = Path(environ["GITHUB_ENV"])
-          f = p.open(mode="a")
-          f.write(f"TOX_ENV={env}\n")
+          with Path(environ["GITHUB_ENV"]).open(mode="a"):
+              f.write(f"TOX_ENV={env}\n")
 
       - name: Set up Tox environment
         run: |
