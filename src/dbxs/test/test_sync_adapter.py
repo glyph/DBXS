@@ -324,7 +324,7 @@ class ResourceManagementTests(SyncTestCase):
                 [("stub", None, None, None, None, None, None)],
             )
             self.assertEqual(await cur.rowcount(), 0)
-            await cur.execute("test expr", ["some", "params"]), []
+            await cur.execute("test expr", ["some", "params"])
             # await cur.executemany(
             #     "lots of operations", [["parameter", "seq"], ["etc", "etc"]]
             # )

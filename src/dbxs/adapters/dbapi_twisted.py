@@ -86,7 +86,7 @@ class ExclusiveWorkQueue:
         def workInThread() -> None:
             try:
                 result = work()
-            except BaseException:
+            except BaseException:  # noqa:B036
                 f = Failure()
                 self._deliver(lambda: deferred.errback(f))
             else:
