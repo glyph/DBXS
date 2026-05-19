@@ -292,8 +292,9 @@ jobs:
 
           print(f"TOX_ENV={env}")
 
-          with Path(environ["GITHUB_ENV"]).open(mode="a"):
-              f.write(f"TOX_ENV={env}\n")
+          f = Path(environ["GITHUB_ENV"]).open(mode="a")
+          f.write(f"TOX_ENV={env}\n")
+          f.close()
 
       - name: Set up Tox environment
         run: |
