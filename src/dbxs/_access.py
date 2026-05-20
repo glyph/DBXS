@@ -36,7 +36,7 @@ from typing import (
 try:
     from sqlalchemy.engine.default import DefaultDialect
     from sqlalchemy.engine.interfaces import Dialect
-    from sqlalchemy.sql.expression import Select
+    from sqlalchemy.sql.expression import ReturnsRows
 except ImportError:
     pass
 
@@ -287,7 +287,7 @@ class QueryMetadata(Generic[A]):
     """
 
     name: str
-    sql: str | Select
+    sql: str | ReturnsRows
     load: Callable[[AccessProxy, AsyncCursor], A]
     signature: Signature
     compilationCache: dict[ParamStyle | Dialect, tuple[str, BinderMap]]
@@ -388,7 +388,7 @@ class QueryMetadata(Generic[A]):
     def decorateMethod(
         cls,
         protocolMethod: Any,
-        sql: str | Select,
+        sql: str | ReturnsRows,
         load: Callable[[AccessProxy, AsyncCursor], A],
     ) -> None:
         """
@@ -439,7 +439,7 @@ class QueryMetadata(Generic[A]):
 
 def query(
     *,
-    sql: str | Select,
+    sql: str | ReturnsRows,
     load: Callable[[AccessProxy, AsyncCursor], A],
 ) -> Callable[[Callable[P, A]], Callable[P, A]]:
     """
@@ -455,7 +455,7 @@ def query(
 
 def statement(
     *,
-    sql: str | Select,
+    sql: str | ReturnsRows,
 ) -> Callable[
     [Callable[P, Coroutine[Any, Any, None]]],
     Callable[P, Coroutine[Any, Any, None]],
