@@ -73,14 +73,16 @@ intersphinx_mapping = {
     "py3": ("https://docs.python.org/3", None),
     "zopeinterface": ("https://zopeinterface.readthedocs.io/en/latest", None),
     "twisted": ("https://docs.twisted.org/en/twisted-25.5.0/api", None),
+    "sqlalchemy": ("https://docs.sqlalchemy.org/en/20/", None),
 }
 pydoctor_args = [
     # pydoctor should not fail the sphinx build, we have another tox
     # environment for that.
-    "--intersphinx=https://docs.twisted.org/en/twisted-25.5.0/api/objects.inv",
+    "--intersphinx=https://docs.twisted.org/en/twisted-26.4.0/api/objects.inv",
     "--intersphinx=https://docs.python.org/3/objects.inv",
     "--intersphinx=https://zopeinterface.readthedocs.io/en/latest/objects.inv",
     "--intersphinx=https://datetype.readthedocs.io/en/latest/objects.inv",
+    "--intersphinx=https://docs.sqlalchemy.org/en/20/objects.inv",
     # TODO: not sure why I have to specify these all twice.
     f"--config={_project_root}/.pydoctor.cfg",
     f"--html-viewsource-base=https://github.com/glyph/dbxs/tree/{_git_reference}/src",

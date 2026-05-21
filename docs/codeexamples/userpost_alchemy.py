@@ -4,18 +4,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import AsyncIterable, Protocol
 
-from sqlalchemy import (
-    TIMESTAMP,
-    Column,
-    ForeignKeyConstraint,
-    Integer,
-    MetaData,
-    Table,
-    Text,
-    bindparam,
-    select,
-)
-
 from dbxs import many, one, query, repository, statement
 from dbxs.adapters.dbapi_twisted import adaptSynchronousDriver
 from dbxs.async_dbapi import transaction
@@ -80,38 +68,43 @@ class Post:
     # end post
 
 
-def idcol() -> Column[int]:
-    return Column("id", Integer, primary_key=True, autoincrement=True)
+# start schema definition
+from sqlalchemy import Column, MetaData, Table
 
 
 metadata = MetaData()
+
+from sqlalchemy import TIMESTAMP, ForeignKeyConstraint, Integer, Text
+
+
 userTable = Table(
     "user",
     metadata,
-    idcol(),
+    Column("id", Integer, primary_key=True, autoincrement=True),
     Column("name", Text, nullable=False),
 )
 postTable = Table(
     "post",
     metadata,
-    idcol(),
+    Column("id", Integer, primary_key=True, autoincrement=True),
     Column("created", TIMESTAMP, nullable=False),
     Column("content", Text, nullable=False),
     Column("author", Integer, nullable=False),
     ForeignKeyConstraint(["author"], [userTable.c.id], ondelete="cascade"),
 )
-
+# end schema definition
 
 # start postdb protocol
+from sqlalchemy import bindparam, select
+
+
 class PostDB(Protocol):
     # start postdb methods
     # start createUser
     @query(
-        sql=(
-            userTable.insert()
-            .values({userTable.c.name: bindparam("name")})
-            .returning(userTable.c.id, userTable.c.id)
-        ),
+        sql=userTable.insert()
+        .values({userTable.c.name: bindparam("name")})
+        .returning(*userTable.c["id", "name"]),
         load=one(User),
     )
     async def createUser(self, name: str) -> User:
@@ -119,7 +112,7 @@ class PostDB(Protocol):
         # end createUser
 
     @query(
-        sql=select(userTable.c.id, userTable.c.name).where(
+        sql=select(*userTable.c["id", "name"]).where(
             userTable.c.name == bindparam("name")
         ),
         load=one(User),
@@ -129,9 +122,14 @@ class PostDB(Protocol):
 
     # start postsForUser
     @query(
-        sql=select(*postTable.c["id", "author", "created", "content"]).where(
-            postTable.c.author == bindparam("userID")
-        ),
+        sql=select(
+            *postTable.c[
+                "id",
+                "author",
+                "created",
+                "content",
+            ]
+        ).where(postTable.c.author == bindparam("userID")),
         load=many(Post),
     )
     def postsForUser(self, userID: int) -> AsyncIterable[Post]:

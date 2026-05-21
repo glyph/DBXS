@@ -144,6 +144,105 @@ work with itself, we can put some methods onto ``User`` as well, that call these
    :start-after: start user methods
    :end-before: end user methods
 
+SQLAlchemy Core Support
+-----------------------
+
+If you are using the `SQLAlchemy Core
+<https://docs.sqlalchemy.org/en/20/core/>`_ expression language, you can also
+use SQLAlchemy Core expressions as your queries within your DBXS accessor
+protocols instead of SQL strings.  You will need to use
+:py:func:`sqlalchemy.sql.expression.bindparam` for each of your parameters,
+rather than a ``{parameter}`` surrounded by curly braces in an SQL string.
+
+For example, we can translate the ``userpost.py`` schema to SQLAlchemy Core
+like so; first, we have to define the schema:
+
+.. literalinclude:: codeexamples/userpost_alchemy.py
+   :start-after: start schema definition
+   :end-before: end schema definition
+
+Then, any SQL-string-using method may be re-defined using this metadata for its
+``sql=`` parameter, using ``bindparam`` as described above.  For example, here
+is a working translation of the ``createUser`` method:
+
+.. literalinclude:: codeexamples/userpost_alchemy.py
+   :start-after: start createUser
+   :end-before: end createUser
+
+Note that you can mix and match raw SQL or SQLAlchemy Core expressions as much
+as you’d like, even within the same protocol.
+
+Since this is not a SQLAlchemy Core Expression Language tutorial, we will elide
+the remainder of the translations, but there’s nothing new there as far as DBXS
+is concerned; just write your queries as SQLAlchemy Core queries, with
+``bindparam("name")`` to match your accessor method's parameter names.
+
+.. note::
+
+   The usage of the terminology “SQLAlchemy ***Core***” in this section is very
+   intentional.  The `SQLAlchemy ORM
+   <https://docs.sqlalchemy.org/en/20/orm/index.html>` is not supported by
+   DBXS.  Due to fundamental differences in their underlying architectures, it
+   is unlikely that the ORM will be supported by DBXS in the future, either.
+
+*Why* Use SQLAlchemy Core With DBXS?
+====================================
+
+DBXS allows you to write raw SQL to access all of your database’s features
+while preventing SQL injection.  It may, therefore, seem duplicative to use
+them together, when SQLAlchemy Core also already prevents SQL injection on its
+own.
+
+However, SQL injection prevention is just one feature of DBXS; its main focus
+is not security; rather, its security is a side-effect of its *main* focus,
+which is to *keep your queries organized*.
+
+While there are benefits to using raw SQL (such as transparency and
+simplicity), in more advanced database applications, an expression language
+like SQLAlchemy Core can provide higher-level functionality that avoids a lot
+of duplicate work.  For example, in raw SQL, it's very hard to write a
+inequality pagination query that can operate on an arbitrary column from any
+table.
+
+When using SQLAlchemy Core without DBXS, it’s unfortunately easy to make a mess
+out of your queries. They can end up smeared out all over your codebase, making
+it difficult to find where a particular query is defined.  This mess can create
+both legibility and efficiency challenges.
+
+The legibility challenge is the difficulty of working backwards from a SQL
+string you're looking at in database logs, trying to figure out where in the
+code that particular query is defined, based on a series of functions which
+incrementally build up queries as they're being executed.
+
+The efficiency problems arise come from two separate issues.
+
+First, because it's idiomatic to build up SQLAlchemy Core queries at runtime as
+your application code is getting invoked, you can waste time re-building the
+same query over and over again.  As queries grow and become more complex, the
+CPU performance overhead from the sheer number of function calls needed to do
+this can become significant.
+
+Second, while Python's database API does not natively support `prepared
+statements <https://en.wikipedia.org/wiki/Prepared_statement>`_, some database
+drivers `use an heuristic to try to avoid
+<https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#prepared-statement-cache>`_
+repeatedly uploading the same SQL string to the database over and over again,
+which requires that an SQL expression be *the same string* on each repeated
+query to be properly cached.  According to SQLAlchemy's own documentation this
+can be as much as 10% faster.  But idiomatic SQLAlchemy can easily produce
+*different* statements on each execution if you're not careful, rather than
+bind parameters, breaking the database driver's prepared statement heuristic
+entirely.
+
+Due to its structure, DBXS forces all SQLAlchemy Core queries to be both
+defined defined and compiled to SQL once, at import time, thus inherently
+preventing any duplicative construction or query variation at runtime.
+
+Thus, if you are using SQLAlchemy Core already and you're happy with it, adding
+DBXS to it will let you keep all the stuff you like while adding a layer of
+structure that will make it ***both*** faster to execute and easier to debug.
+
+
 Organizing Multiple Data-Access Protocols with a ``repository``
 ---------------------------------------------------------------
 
