@@ -185,7 +185,7 @@ is concerned; just write your queries as SQLAlchemy Core queries, with
    DBXS.  Due to fundamental differences in their underlying architectures, it
    is unlikely that the ORM will be supported by DBXS in the future, either.
 
-*Why* Use SQLAlchemy Core With DBXS?
+*Why* use SQLAlchemy Core with DBXS?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 DBXS allows you to write raw SQL to access all of your database’s features
