@@ -181,7 +181,7 @@ is concerned; just write your queries as SQLAlchemy Core queries, with
 
    The usage of the terminology “SQLAlchemy ***Core***” in this section is very
    intentional.  The `SQLAlchemy ORM
-   <https://docs.sqlalchemy.org/en/20/orm/index.html>` is not supported by
+   <https://docs.sqlalchemy.org/en/20/orm/index.html>`_ is not supported by
    DBXS.  Due to fundamental differences in their underlying architectures, it
    is unlikely that the ORM will be supported by DBXS in the future, either.
 
