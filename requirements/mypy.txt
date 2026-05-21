@@ -3,5 +3,4 @@
 -r sqlalchemy.txt
 mypy==1.19.1
 mypy-zope==1.0.15
-mypy-zope==1.0.15
 types-click==7.1.8
