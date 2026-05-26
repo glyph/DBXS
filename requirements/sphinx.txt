@@ -88,7 +88,7 @@ sphinx==7.4.7
     #   sphinxcontrib-jquery
 sphinx-basic-ng==1.0.0b2
     # via furo
-sphinx-rtd-theme==3.0.2
+sphinx-rtd-theme==3.1.0
     # via -r requirements/sphinx.in
 sphinxcontrib-applehelp==2.0.0
     # via sphinx
