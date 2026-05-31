@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from textwrap import dedent
 from unittest import TestCase
 
-from dbxs.schema import SchemaBuilder
+from dbxs.schema import NotCurrentlyDefining, SchemaBuilder
 
 
 class SchemaBuilderTests(TestCase):
@@ -78,3 +78,15 @@ class SchemaBuilderTests(TestCase):
                 """
             ),
         )
+
+    def test_errorHandling(self) -> None:
+        """
+        Using L{SchemaBuilder.column} outside of a class decorated with
+        C{@builder.table} will result in a comprehensible error.
+        """
+
+        builder = SchemaBuilder()
+        with self.assertRaises(NotCurrentlyDefining):
+            builder.column("something TEXT NOT NULL")
+        with self.assertRaises(NotCurrentlyDefining):
+            builder.constraint("foreign key, or whatever")

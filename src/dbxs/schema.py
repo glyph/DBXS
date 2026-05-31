@@ -24,6 +24,12 @@ CREATE TABLE IF NOT EXISTS {tableName} (
 """
 
 
+class NotCurrentlyDefining(RuntimeError):
+    """
+    A L{SchemaBuilder} method was called while not defining a table.
+    """
+
+
 @dataclass
 class _WorkingTable:
     back: _WorkingTable | None
@@ -40,7 +46,7 @@ class _TableStack(local):
 
     def get(self) -> _WorkingTable:
         if self.current is None:
-            raise RuntimeError("not currently defining a table")
+            raise NotCurrentlyDefining("not currently defining a table")
         return self.current
 
     def pop(self) -> _WorkingTable:
