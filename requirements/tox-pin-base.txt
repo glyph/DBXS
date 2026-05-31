@@ -3,7 +3,7 @@ Automat==25.4.16
 constantly==23.10.4
 hyperlink==21.0.0
 idna==3.11
-incremental==24.7.2
+incremental==24.11.0
 six==1.17.0
 typing-extensions==4.15.0
 zope.interface==8.0.1
