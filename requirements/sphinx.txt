@@ -109,7 +109,7 @@ tomli==2.4.1
     #   incremental
     #   pydoctor
     #   sphinx
-twisted==25.5.0
+twisted==26.4.0
     # via pydoctor
 typing-extensions==4.15.0
     # via
