@@ -24,7 +24,7 @@ cachecontrol==0.14.3
     #   pydoctor
 certifi==2026.5.20
     # via requests
-charset-normalizer==3.4.4
+charset-normalizer==3.4.7
     # via requests
 configargparse==1.7.5
     # via pydoctor
