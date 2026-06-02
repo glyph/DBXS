@@ -26,7 +26,7 @@ certifi==2026.5.20
     # via requests
 charset-normalizer==3.4.4
     # via requests
-configargparse==1.7.1
+configargparse==1.7.5
     # via pydoctor
 constantly==23.10.4
     # via twisted
