@@ -16,7 +16,7 @@ automat==25.4.16
     # via twisted
 babel==2.18.0
     # via sphinx
-beautifulsoup4==4.14.3
+beautifulsoup4==4.15.0
     # via furo
 cachecontrol==0.14.3
     # via
@@ -46,8 +46,6 @@ idna==3.11
     #   hyperlink
     #   requests
 imagesize==1.5.0
-    # via sphinx
-importlib-metadata==8.7.1
     # via sphinx
 incremental==24.7.2
     # via twisted
@@ -113,15 +111,12 @@ twisted==26.4.0
     # via pydoctor
 typing-extensions==4.15.0
     # via
-    #   automat
     #   beautifulsoup4
     #   twisted
 urllib3==2.6.3
     # via
     #   pydoctor
     #   requests
-zipp==3.23.1
-    # via importlib-metadata
 zope-interface==8.0.1
     # via twisted
 
