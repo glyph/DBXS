@@ -22,7 +22,7 @@ cachecontrol==0.14.3
     # via
     #   cachecontrol
     #   pydoctor
-certifi==2026.5.20
+certifi==2026.6.17
     # via requests
 charset-normalizer==3.4.7
     # via requests
