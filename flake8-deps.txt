@@ -19,7 +19,7 @@ flake8-docstrings==1.7.0
     # via -r flake8-deps.in
 flake8-mutable==1.2.0
     # via -r flake8-deps.in
-flake8-pep3101==2.1.0
+flake8-pep3101==3.0.0
     # via -r flake8-deps.in
 mccabe==0.7.0
     # via flake8
