@@ -6,4 +6,4 @@ idna==3.18
 incremental==24.11.0
 six==1.17.0
 typing-extensions==4.15.0
-zope.interface==8.0.1
+zope.interface==8.5
