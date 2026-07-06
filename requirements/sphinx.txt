@@ -59,7 +59,7 @@ msgpack==1.2.1
     # via cachecontrol
 packaging==26.2
     # via sphinx
-platformdirs==4.4.0
+platformdirs==4.10.0
     # via pydoctor
 pydoctor==25.10.1
     # via -r requirements/sphinx.in
