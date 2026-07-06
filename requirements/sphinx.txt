@@ -45,7 +45,7 @@ idna==3.11
     # via
     #   hyperlink
     #   requests
-imagesize==1.5.0
+imagesize==2.0.0
     # via sphinx
 incremental==24.7.2
     # via twisted
