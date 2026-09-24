@@ -45,6 +45,9 @@ StrictParamStyle = Literal[
     "numeric_dollar",
     # ... but sqlalchemy only supports numeric_dollar, per
     # https://github.com/sqlalchemy/sqlalchemy/blob/cb3e0ccbe372cb12a103115618c01ac3c1f2c8b7/lib/sqlalchemy/sql/compiler.py#L273-L280
+    # https://github.com/sqlalchemy/sqlalchemy/issues/13603
+    # however, sqlite supports named_dollar, per
+    # https://sqlite.org/lang_expr.html#parameters
     # "named_dollar",
 ]
 
@@ -97,7 +100,7 @@ class AsyncConnection(Protocol):
     """
 
     @property
-    def paramstyle(self) -> ParamStyle:
+    def paramstyle(self) -> StrictParamStyle:
         ...
 
     async def cursor(self) -> AsyncCursor:

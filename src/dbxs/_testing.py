@@ -3,16 +3,7 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Coroutine,
-    List,
-    Literal,
-    Sequence,
-    TypeVar,
-)
+from typing import Any, Callable, Coroutine, List, Literal, Sequence, TypeVar
 from unittest import TestCase
 from uuid import uuid4
 
@@ -27,13 +18,13 @@ from .async_dbapi import AsyncConnectable
 from .dbapi import DBAPIConnection
 
 
-if TYPE_CHECKING:
-    SQLiteStyle = Literal[
-        # See https://sqlite.org/lang_expr.html#parameters
-        "qmark",
-        "named",
-        "named_dollar",
-    ]
+SQLiteStyle = Literal[
+    # See https://sqlite.org/lang_expr.html#parameters
+    "qmark",
+    "named",
+    # https://github.com/sqlalchemy/sqlalchemy/issues/13603
+    # "named_dollar",
+]
 
 
 def sqlite3Connector() -> Callable[[], DBAPIConnection]:
@@ -107,7 +98,11 @@ class MemoryPool:
     @classmethod
     def new(
         cls,
-        style: Literal["named", "qmark", "named_dollar"] = "qmark",
+        style: Literal[
+            "named",
+            "qmark"
+            # , "named_dollar"
+        ] = "qmark",
     ) -> MemoryPool:
         """
         Create a synchronous memory connection pool.
@@ -222,7 +217,7 @@ def immediateTest(
             if "named" in styles:
                 body("named")
             if "named_dollar" in styles:
-                body("named_dollar")
+                body("named_dollar")  # type:ignore[arg-type]
 
         return regular
 

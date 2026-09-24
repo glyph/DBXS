@@ -2,7 +2,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Mapping, Optional, Sequence, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
 from mysql.connector import paramstyle as mysqlParamStyle
 from mysql.connector.aio.abstracts import (
@@ -15,7 +24,7 @@ from ..async_dbapi import (
     AsyncConnectable,
     AsyncConnection,
     AsyncCursor,
-    ParamStyle,
+    StrictParamStyle,
 )
 from ..dbapi import DBAPIColumnDescription
 from .async_pool import newPool
@@ -75,13 +84,19 @@ class _MYSQL2DBXSCursor:
 SomeMySQLConnection = MySQLConnectionAbstract | PooledMySQLConnection
 
 
+if not TYPE_CHECKING:
+    assert (
+        mysqlParamStyle in StrictParamStyle.__args__
+    ), f"Unknown param style from psycopg: {mysqlParamStyle}"
+
+
 @dataclass
 class _MYSQL2DBXSAdapter:
     _mysqlcon: SomeMySQLConnection
 
     @property
-    def paramstyle(self) -> ParamStyle:
-        return mysqlParamStyle
+    def paramstyle(self) -> StrictParamStyle:
+        return mysqlParamStyle  # type:ignore[return-value]
 
     async def cursor(self) -> AsyncCursor:
         return _MYSQL2DBXSCursor(await self._mysqlcon.cursor())

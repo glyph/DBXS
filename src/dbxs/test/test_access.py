@@ -213,7 +213,13 @@ class AccessTestCase(TestCase):
     Tests for L{accessor} and its associated functions
     """
 
-    @immediateTest(styles=["qmark", "named", "named_dollar"])
+    @immediateTest(
+        styles=[
+            "qmark",
+            "named",
+            "named_dollar",  # type:ignore[list-item]
+        ]
+    )
     async def test_happyPath(self, pool: MemoryPool) -> None:
         """
         Declaring a protocol with a query and executing it
@@ -272,7 +278,13 @@ class AccessTestCase(TestCase):
             result = await db.echoValue()
             self.assertEqual(result, "3")
 
-    @immediateTest(styles=["qmark", "named", "named_dollar"])
+    @immediateTest(
+        styles=[
+            "qmark",
+            "named",
+            "named_dollar",  # type:ignore[list-item]
+        ]
+    )
     async def test_repeatParams(self, pool: MemoryPool) -> None:
         async with transaction(pool.connectable) as c:
             db = accessFoo(c)

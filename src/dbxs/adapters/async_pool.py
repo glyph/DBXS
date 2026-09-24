@@ -12,6 +12,7 @@ from ..async_dbapi import (
     AsyncConnection,
     AsyncCursor,
     InvalidConnection,
+    StrictParamStyle,
 )
 
 
@@ -40,7 +41,7 @@ class _PooledConnectionGuard:
         return a
 
     @property
-    def paramstyle(self) -> str:
+    def paramstyle(self) -> StrictParamStyle:
         return self._original(False).paramstyle
 
     async def cursor(self) -> AsyncCursor:
