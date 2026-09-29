@@ -81,6 +81,39 @@ jobs:
         run: tox run -e mypy
 
 
+  zuban:
+
+    name: Zuban (static type checker)
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: System Python Information
+        uses: twisted/python-info-action@v1
+
+      - name: Set up Tox environment
+        run: |
+          pip install tox
+          tox run -e zuban --notest
+
+      - name: Tox Python Information
+        uses: twisted/python-info-action@v1
+        with:
+          python-path: .tox/mypy/*/python
+
+      - name: Run Mypy
+        run: tox run -e zuban
+
   docs:
 
     name: Build documentation
