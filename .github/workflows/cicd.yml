@@ -98,9 +98,6 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: System Python Information
-        uses: twisted/python-info-action@v1
-
       - name: Set up Tox environment
         run: |
           pip install tox
