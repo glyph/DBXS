@@ -111,7 +111,7 @@ jobs:
         with:
           python-path: .tox/zuban/*/python
 
-      - name: Run Mypy
+      - name: Run Zuban
         run: tox run -e zuban
 
   docs:
