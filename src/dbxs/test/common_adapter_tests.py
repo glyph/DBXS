@@ -73,7 +73,7 @@ class CommonTests(TestCase, metaclass=CommonMeta):
                 async with transaction(cc) as t:
                     cur = await t.cursor()
                     await cur.execute("insert into foo values(2)")
-                    1 / 0
+                    1 / 0 # type: ignore
 
             async with transaction(cc) as t:
                 cur = await t.cursor()

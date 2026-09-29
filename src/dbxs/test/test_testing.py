@@ -43,7 +43,7 @@ class TestFailing(TestCase):
 
         @immediateTest()
         async def method(self: TestFailing, pool: MemoryPool) -> None:
-            1 / 0
+            1 / 0 # type: ignore
 
         with self.assertRaises(ZeroDivisionError):
             method(self)
@@ -57,7 +57,7 @@ class TestFailing(TestCase):
         @immediateTest()
         async def method(self: TestFailing, pool: MemoryPool) -> None:
             await pool.connectable.connect()
-            1 / 0
+            1 / 0 # type: ignore
 
         with self.assertRaises(ZeroDivisionError):
             method(self)
