@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from ._access import AccessProxy, QueryMetadata
+from .async_dbapi import StrictParamStyle
 
 
 @dataclass(frozen=True)
@@ -13,7 +14,9 @@ class CompiledQuery:
     parameters: tuple[str, ...]
 
 
-def queries(moduleName: str, dialect: str) -> Iterable[CompiledQuery]:
+def queries(
+    moduleName: str, dialect: StrictParamStyle
+) -> Iterable[CompiledQuery]:
     from twisted.python.modules import getModule
 
     for module in getModule(moduleName).walkModules():

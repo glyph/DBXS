@@ -3,7 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Mapping, Optional, Sequence, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
 from psycopg import (
     AsyncConnection as PGAsyncConnection,
@@ -11,14 +20,14 @@ from psycopg import (
     paramstyle as psycopgParamStyle,
 )
 
-from ..async_dbapi import (
-    AsyncConnectable,
-    AsyncConnection,
-    AsyncCursor,
-    ParamStyle,
-)
+from ..async_dbapi import AsyncConnectable, AsyncConnection, AsyncCursor
 from ..dbapi import DBAPIColumnDescription
 from .async_pool import newPool
+
+
+assert (
+    psycopgParamStyle == "pyformat"
+), f"unexpected param style from psycopg: {psycopgParamStyle}"
 
 
 @dataclass
@@ -72,8 +81,9 @@ class _PG2DBXSAdapter:
     _pgcon: PGAsyncConnection
 
     @property
-    def paramstyle(self) -> ParamStyle:
-        return psycopgParamStyle
+    def paramstyle(self) -> Literal["pyformat"]:
+        # see assertion above to ensure that this is definitely fine
+        return psycopgParamStyle  # type:ignore[return-value]
 
     async def cursor(self) -> AsyncCursor:
         return _PG2DBXSCursor(self._pgcon.cursor())

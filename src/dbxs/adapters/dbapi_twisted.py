@@ -34,7 +34,7 @@ from ..async_dbapi import (
     AsyncConnectable,
     AsyncConnection,
     AsyncCursor,
-    ParamStyle,
+    StrictParamStyle,
 )
 from ..dbapi import DBAPIColumnDescription, DBAPIConnection, DBAPICursor
 from .async_pool import newPool
@@ -193,10 +193,10 @@ class _ThreadedConnectionAdapter:
 
     _connection: Optional[DBAPIConnection]
     _exclusive: ExclusiveWorkQueue
-    _paramstyle: ParamStyle
+    _paramstyle: StrictParamStyle
 
     @property
-    def paramstyle(self) -> ParamStyle:
+    def paramstyle(self) -> StrictParamStyle:
         return self._paramstyle
 
     def _getConnection(self, invalidate: bool = False) -> DBAPIConnection:
@@ -247,7 +247,7 @@ def _synthesizeConnector(
     createWorker: Callable[[], IExclusiveWorker],
     deliver: Callable[[Callable[[], None]], None],
     connectCallable: Callable[[], DBAPIConnection],
-    paramstyle: ParamStyle,
+    paramstyle: StrictParamStyle,
 ) -> Callable[[], Awaitable[AsyncConnection]]:
     """
     Creates a callable that creates an AsyncConnection via a threadpool.
@@ -263,7 +263,7 @@ def _synthesizeConnector(
 
 def adaptSynchronousDriver(
     connectCallable: Callable[[], DBAPIConnection],
-    paramstyle: ParamStyle,
+    paramstyle: StrictParamStyle,
     *,
     createWorker: Optional[Callable[[], IExclusiveWorker]] = None,
     callFromThread: Optional[Callable[[F], None]] = None,

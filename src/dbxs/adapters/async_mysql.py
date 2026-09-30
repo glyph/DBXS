@@ -15,7 +15,7 @@ from ..async_dbapi import (
     AsyncConnectable,
     AsyncConnection,
     AsyncCursor,
-    ParamStyle,
+    StrictParamStyle,
 )
 from ..dbapi import DBAPIColumnDescription
 from .async_pool import newPool
@@ -75,13 +75,18 @@ class _MYSQL2DBXSCursor:
 SomeMySQLConnection = MySQLConnectionAbstract | PooledMySQLConnection
 
 
+assert (
+    mysqlParamStyle == "pyformat"
+), f"unexpected param style from mysql.connector: {mysqlParamStyle}"
+
+
 @dataclass
 class _MYSQL2DBXSAdapter:
     _mysqlcon: SomeMySQLConnection
 
     @property
-    def paramstyle(self) -> ParamStyle:
-        return mysqlParamStyle
+    def paramstyle(self) -> StrictParamStyle:
+        return mysqlParamStyle  # type:ignore[return-value]
 
     async def cursor(self) -> AsyncCursor:
         return _MYSQL2DBXSCursor(await self._mysqlcon.cursor())
