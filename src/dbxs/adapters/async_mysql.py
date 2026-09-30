@@ -2,16 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Awaitable,
-    Callable,
-    Mapping,
-    Optional,
-    Sequence,
-    Union,
-)
+from typing import Any, Awaitable, Callable, Mapping, Optional, Sequence, Union
 
 from mysql.connector import paramstyle as mysqlParamStyle
 from mysql.connector.aio.abstracts import (
@@ -84,10 +75,9 @@ class _MYSQL2DBXSCursor:
 SomeMySQLConnection = MySQLConnectionAbstract | PooledMySQLConnection
 
 
-if not TYPE_CHECKING:
-    assert (
-        mysqlParamStyle in StrictParamStyle.__args__
-    ), f"Unknown param style from psycopg: {mysqlParamStyle}"
+assert (
+    mysqlParamStyle == "pyformat"
+), f"unexpected param style from mysql.connector: {mysqlParamStyle}"
 
 
 @dataclass
