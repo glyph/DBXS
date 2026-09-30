@@ -292,19 +292,12 @@ class QueryMetadata(Generic[A]):
     signature: Signature
     compilationCache: dict[ParamStyle | Dialect, tuple[str, BinderMap]]
 
-    def computeSQLFor(
-        self, style: StrictParamStyle | Dialect
-    ) -> tuple[str, BinderMap]:
+    def computeSQLFor(self, style: StrictParamStyle) -> tuple[str, BinderMap]:
         try:
             return self.compilationCache[style]
         except KeyError as ke:
             if isinstance(self.sql, str):
-                paramStyleKey: StrictParamStyle
-                if isinstance(style, str):
-                    paramStyleKey = style
-                else:
-                    paramStyleKey = style.paramstyle  # type:ignore[assignment]
-                mapFactory = styles[paramStyleKey]
+                mapFactory = styles[style]
                 mapInstance = mapFactory()
                 styledSQL = self.sql.format_map(mapInstance)
                 self.compilationCache[style] = (styledSQL, mapInstance)
