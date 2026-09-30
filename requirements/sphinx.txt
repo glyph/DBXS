@@ -16,17 +16,17 @@ automat==25.4.16
     # via twisted
 babel==2.18.0
     # via sphinx
-beautifulsoup4==4.14.3
+beautifulsoup4==4.15.0
     # via furo
 cachecontrol==0.14.3
     # via
     #   cachecontrol
     #   pydoctor
-certifi==2025.11.12
+certifi==2026.6.17
     # via requests
-charset-normalizer==3.4.4
+charset-normalizer==3.4.7
     # via requests
-configargparse==1.7.1
+configargparse==1.7.5
     # via pydoctor
 constantly==23.10.4
     # via twisted
@@ -35,7 +35,7 @@ docutils==0.21.2
     #   pydoctor
     #   sphinx
     #   sphinx-rtd-theme
-filelock==3.19.1
+filelock==3.29.4
     # via cachecontrol
 furo==2025.12.19
     # via -r requirements/sphinx.in
@@ -47,8 +47,6 @@ idna==3.11
     #   requests
 imagesize==1.5.0
     # via sphinx
-importlib-metadata==8.7.1
-    # via sphinx
 incremental==24.7.2
     # via twisted
 jinja2==3.1.6
@@ -57,7 +55,7 @@ lunr==0.8.0
     # via pydoctor
 markupsafe==3.0.3
     # via jinja2
-msgpack==1.1.2
+msgpack==1.2.1
     # via cachecontrol
 packaging==26.2
     # via sphinx
@@ -65,7 +63,7 @@ platformdirs==4.4.0
     # via pydoctor
 pydoctor==25.10.1
     # via -r requirements/sphinx.in
-pygments==2.19.2
+pygments==2.20.0
     # via
     #   accessible-pygments
     #   furo
@@ -75,9 +73,9 @@ requests==2.32.5
     #   cachecontrol
     #   pydoctor
     #   sphinx
-snowballstemmer==3.1.0
+snowballstemmer==3.1.1
     # via sphinx
-soupsieve==2.8
+soupsieve==2.8.4
     # via beautifulsoup4
 sphinx==7.4.7
     # via
@@ -109,19 +107,16 @@ tomli==2.4.1
     #   incremental
     #   pydoctor
     #   sphinx
-twisted==25.5.0
+twisted==26.4.0
     # via pydoctor
 typing-extensions==4.15.0
     # via
-    #   automat
     #   beautifulsoup4
     #   twisted
 urllib3==2.6.3
     # via
     #   pydoctor
     #   requests
-zipp==3.23.1
-    # via importlib-metadata
 zope-interface==8.0.1
     # via twisted
 
