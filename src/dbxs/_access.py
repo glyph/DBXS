@@ -292,34 +292,23 @@ class QueryMetadata(Generic[A]):
     signature: Signature
     compilationCache: dict[ParamStyle | Dialect, tuple[str, BinderMap]]
 
-    def computeSQLFor(
-        self, style: ParamStyle | Dialect
-    ) -> tuple[str, BinderMap]:
+    def computeSQLFor(self, style: StrictParamStyle) -> tuple[str, BinderMap]:
         try:
             return self.compilationCache[style]
         except KeyError as ke:
             if isinstance(self.sql, str):
-                mapFactory = styles[
-                    (
-                        style
-                        if isinstance(style, ParamStyle)
-                        else style.paramstyle
-                    )
-                ]
+                mapFactory = styles[style]
                 mapInstance = mapFactory()
                 styledSQL = self.sql.format_map(mapInstance)
                 self.compilationCache[style] = (styledSQL, mapInstance)
             else:
                 # Right now all the precomputed SQL is generated at compile
                 # time.
-                strictStyle: StrictParamStyle = (
-                    style  # type:ignore[assignment]
-                )
                 compiled = self.sql.compile(
                     dialect=(
                         style
                         if isinstance(style, Dialect)
-                        else DefaultDialect(strictStyle)
+                        else DefaultDialect(style)
                     )
                 )
                 positionTup = compiled.positiontup
@@ -536,7 +525,7 @@ class BinderMap(Protocol):
         ...
 
 
-styles: dict[str, Callable[[], BinderMap]] = {
+styles: dict[StrictParamStyle, Callable[[], BinderMap]] = {
     "qmark": lambda: IndexCountingParamstyleMap("?"),
     "numeric": lambda: NumericParamstyleMap(":"),
     "named": lambda: NamedParamstyleMap(":"),
@@ -545,7 +534,8 @@ styles: dict[str, Callable[[], BinderMap]] = {
     # These DB-API 2.0 extensions are named by
     # https://python-sql-parameters.readthedocs.io/en/latest/sqlparams.html
     "numeric_dollar": lambda: NumericParamstyleMap("$"),
-    "named_dollar": lambda: NamedParamstyleMap("$"),
+    # https://github.com/sqlalchemy/sqlalchemy/issues/13603
+    "named_dollar": lambda: NamedParamstyleMap("$"),  # type:ignore[dict-item]
 }
 
 
