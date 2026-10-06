@@ -1,2 +1,2 @@
-psycopg==3.3.4
+psycopg==3.3.6
 psycopg-binary==3.3.4 ; implementation_name == "cpython"
