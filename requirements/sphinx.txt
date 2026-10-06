@@ -55,7 +55,7 @@ lunr==0.8.0
     # via pydoctor
 markupsafe==3.0.3
     # via jinja2
-msgpack==1.2.1
+msgpack==1.2.3
     # via cachecontrol
 packaging==26.2
     # via sphinx
