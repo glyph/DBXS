@@ -18,7 +18,7 @@ babel==2.18.0
     # via sphinx
 beautifulsoup4==4.15.0
     # via furo
-cachecontrol==0.14.3
+cachecontrol==0.14.4
     # via
     #   cachecontrol
     #   pydoctor
