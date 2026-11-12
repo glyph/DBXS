@@ -207,3 +207,7 @@ limitations compared to what I would consider a “final” release:
   [Twisted's](https://twisted.org/) threadpool.  It should support [asyncio, as
   well as some of the native database
   drivers](https://github.com/glyph/DBXS/issues/19) for the asyncio ecosystem.
+
+## AI Policy
+
+DBXS follows the [Twisted AI Policy](https://docs.twisted.org/en/latest/development/ai-policy.html). This means this project does not allow the inclusion of the outputs of generative AI tools.
